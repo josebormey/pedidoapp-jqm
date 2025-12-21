@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.ferroclimaexpress.jqm" version="1.0.0"
+        xmlns="http://www.w3.org/ns/widgets"
+        xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>PedidoApp JQM</name>
+    <description>Demo sencillo con jQuery Mobile</description>
+    <author email="jose@example.com">Jose</author>
+    <content src="index.html" />
+    <preference name="android-minSdkVersion" value="24" />
+    <preference name="android-targetSdkVersion" value="34" />
+    <plugin name="cordova-plugin-whitelist" spec="1" />
+    <allow-navigation href="*" />
+    <allow-intent href="*" />
+</widget>
