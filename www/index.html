@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>ECGA JQM</title>
+  <title>PedidoApp JQM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- jQuery y jQuery Mobile -->
   <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
@@ -11,10 +11,10 @@
 </head>
 <body>
 
-<!-- Página de pedidos -->
+<!-- Página principal -->
 <div data-role="page" id="pedidos">
   <div data-role="header">
-    <h1>Pedidos ECGA</h1>
+    <h1>Pedidos en curso</h1>
   </div>
 
   <div role="main" class="ui-content">
@@ -22,31 +22,96 @@
       Refrescar pedidos
     </a>
     <ul data-role="listview" id="lista-pedidos"></ul>
+
+    <h3>Productos del pedido</h3>
+    <ul data-role="listview" id="lista-productos"></ul>
   </div>
 </div>
 
 <script>
-$(document).on("pageinit", "#pedidos", function() {
-  function cargarPedidos() {
-    $("#lista-pedidos").empty().append("<li>Cargando...</li>").listview("refresh");
+const API_URL = "https://www.ferroclimaexpress.com/api";
+const WS_KEY = "B4KYF7LZ714FYZ5KADYM6TZCCKCVS4Q7";
+const CARRIER_ID = 6;
 
-    fetch("https://www.ferroclimaexpress.com/api/orders?carrier_id=6")
-      .then(resp => resp.json())
-      .then(data => {
-        $("#lista-pedidos").empty();
-        data.forEach(pedido => {
-          $("#lista-pedidos").append(
-            `<li><h2>Pedido #${pedido.id}</h2><p>${pedido.customer}</p></li>`
-          );
-        });
-        $("#lista-pedidos").listview("refresh");
-      })
-      .catch(err => {
-        $("#lista-pedidos").empty().append("<li>Error al cargar pedidos</li>").listview("refresh");
-        console.error(err);
+const ESTADOS_PEDIDO = {
+  1: "Pendiente de pago",
+  2: "Pago aceptado",
+  3: "Preparacion en curso",
+  4: "Enviado",
+  5: "Listo para entregar",
+  6: "Entregado",
+  7: "Cancelado"
+};
+
+let pedidosCache = [];
+
+async function obtenerPedidosCompletos(idCarrier) {
+  const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
+  const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+  const data = await resp.json();
+  return data.orders || [];
+}
+
+async function procesarPedidos(idCarrier) {
+  const pedidos = await obtenerPedidosCompletos(idCarrier);
+  const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso");
+
+  pedidosCache = filtrados.map(p => ({
+    id: p.id,
+    cliente: `${p.firstname} ${p.lastname}`,
+    telefono: p.phone || p.phone_mobile || "Teléfono no disponible",
+    direccion: `${p.address1}, ${p.postcode} ${p.city}`,
+    total: p.total_paid,
+    productos: p.associations?.order_rows || [],
+    estado: ESTADOS_PEDIDO[parseInt(p.current_state)] || "Desconocido"
+  }));
+
+  return pedidosCache;
+}
+
+async function cargarPedidos() {
+  $("#lista-pedidos").empty().append("<li>Cargando...</li>").listview("refresh");
+  try {
+    const pedidos = await procesarPedidos(CARRIER_ID);
+    $("#lista-pedidos").empty();
+    if (pedidos.length === 0) {
+      $("#lista-pedidos").append("<li>No existen pedidos en 'Preparacion en curso'</li>");
+    } else {
+      pedidos.forEach(p => {
+        $("#lista-pedidos").append(
+          `<li>
+             <h2>Pedido #${p.id}</h2>
+             <p>${p.cliente} (${p.telefono})</p>
+             <p>${p.direccion}</p>
+             <p>Total: ${p.total} | Estado: ${p.estado}</p>
+             <a href="#" onclick="mostrarProductos(${p.id})" class="ui-btn ui-mini">Ver productos</a>
+           </li>`
+        );
       });
+    }
+    $("#lista-pedidos").listview("refresh");
+  } catch (err) {
+    $("#lista-pedidos").empty().append("<li>Error al cargar pedidos</li>").listview("refresh");
+    console.error(err);
   }
+}
 
+function mostrarProductos(pedidoId) {
+  const pedido = pedidosCache.find(p => p.id == pedidoId);
+  $("#lista-productos").empty();
+  if (pedido && pedido.productos.length > 0) {
+    pedido.productos.forEach(row => {
+      $("#lista-productos").append(
+        `<li>${row.product_name} x${row.product_quantity} - ${row.unit_price_tax_incl}</li>`
+      );
+    });
+  } else {
+    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
+  }
+  $("#lista-productos").listview("refresh");
+}
+
+$(document).on("pageinit", "#pedidos", function() {
   $("#btn-refresh").on("click", cargarPedidos);
   cargarPedidos();
 });
