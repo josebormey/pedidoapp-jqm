@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>PedidoApp JQM</title>
+  <title>ECGA JQM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- jQuery y jQuery Mobile -->
   <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
@@ -10,22 +10,47 @@
   <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
 </head>
 <body>
-  <div data-role="page" id="home">
-    <div data-role="header">
-      <h1>Demo JQM</h1>
-    </div>
-    <div role="main" class="ui-content">
-      <button id="btnHola">Haz click</button>
-      <p id="mensaje"></p>
-    </div>
+
+<!-- Página de pedidos -->
+<div data-role="page" id="pedidos">
+  <div data-role="header">
+    <h1>Pedidos ECGA</h1>
   </div>
 
-  <script>
-    $(document).on("pagecreate", "#home", function() {
-      $("#btnHola").on("click", function() {
-        $("#mensaje").text("Hola Jose");
+  <div role="main" class="ui-content">
+    <a href="#" id="btn-refresh" class="ui-btn ui-corner-all ui-shadow ui-icon-refresh ui-btn-icon-left">
+      Refrescar pedidos
+    </a>
+    <ul data-role="listview" id="lista-pedidos"></ul>
+  </div>
+</div>
+
+<script>
+$(document).on("pageinit", "#pedidos", function() {
+  function cargarPedidos() {
+    $("#lista-pedidos").empty().append("<li>Cargando...</li>").listview("refresh");
+
+    fetch("https://www.ferroclimaexpress.com/api/orders?carrier_id=6")
+      .then(resp => resp.json())
+      .then(data => {
+        $("#lista-pedidos").empty();
+        data.forEach(pedido => {
+          $("#lista-pedidos").append(
+            `<li><h2>Pedido #${pedido.id}</h2><p>${pedido.customer}</p></li>`
+          );
+        });
+        $("#lista-pedidos").listview("refresh");
+      })
+      .catch(err => {
+        $("#lista-pedidos").empty().append("<li>Error al cargar pedidos</li>").listview("refresh");
+        console.error(err);
       });
-    });
-  </script>
+  }
+
+  $("#btn-refresh").on("click", cargarPedidos);
+  cargarPedidos();
+});
+</script>
+
 </body>
 </html>
