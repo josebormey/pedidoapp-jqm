@@ -1,4 +1,4 @@
-name: Build PedidoApp APK
+name: Build JQM APK
 
 on:
   push:
@@ -9,52 +9,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      ANDROID_HOME: ${{ github.workspace }}/android-sdk
-      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
-      JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
-
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
       with:
-        python-version: "3.10"
+        node-version: "18"
 
-    - name: Install system dependencies
+    - name: Install Cordova
+      run: npm install -g cordova
+
+    - name: Create Cordova project
       run: |
-        sudo apt-get update
-        sudo apt-get install -y unzip curl
+        cordova create pedidoapp-jqm com.ferroclimaexpress.jqm PedidoAppJQM
+        cp -r www pedidoapp-jqm/www
+        cp config.xml pedidoapp-jqm/config.xml
+        cd pedidoapp-jqm
+        cordova platform add android
 
-    - name: Install Java 17
+    - name: Build APK
       run: |
-        sudo apt-get install -y openjdk-17-jdk
-        java -version
-
-    - name: Install Android SDK commandline tools
-      run: |
-        mkdir -p $ANDROID_HOME/cmdline-tools
-        curl -Lo commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-        unzip -q commandlinetools.zip -d $ANDROID_HOME/cmdline-tools
-        mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-    - name: Upgrade pip and install Briefcase
-      run: |
-        python -m pip install --upgrade pip
-        pip install "briefcase>=0.3.20"
-
-    - name: Create Android project
-      run: briefcase create android
-
-    - name: Build Android project
-      run: briefcase build android
-
-    - name: Package Android APK
-      run: briefcase package android
+        cd pedidoapp-jqm
+        cordova build android
 
     - name: Debug APK path
       run: |
@@ -64,22 +42,5 @@ jobs:
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
-        name: PedidoApp-APK
-        path: build/pedidoapp/android/gradle/app/build/outputs/apk/debug/app-debug.apk
-
-    - name: Collect build report
-      if: always()
-      run: |
-        REPORT_SRC="build/pedidoapp/android/gradle/app/build/reports/problems/problems-report.html"
-        if [ -f "$REPORT_SRC" ]; then
-          cp "$REPORT_SRC" build-report.html
-        else
-          echo "<html><body><h1>No se encontró problems-report.html</h1></body></html>" > build-report.html
-        fi
-
-    - name: Upload build report artifact
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: PedidoApp-BuildReport
-        path: build-report.html
+        name: PedidoAppJQM-APK
+        path: pedidoapp-jqm/platforms/android/app/build/outputs/apk/debug/app-debug.apk
