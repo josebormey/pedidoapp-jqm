@@ -171,7 +171,8 @@ document.addEventListener("deviceready", function() {
   alert("Cordova listo, plugin HTTP disponible");
   $(document).on("pageshow", "#pedidos", function() {
     $("#btn-refresh").on("click", cargarPedidos);
-    cargarPedidos();
+    alert("Me distes click");
+	cargarPedidos();
   });
 }, false);
 </script>
