@@ -20,22 +20,33 @@
 
   <!-- Cordova -->
   <script src="cordova.js"></script>
+
+  <style>
+    .estado-preparacion { color: orange; font-weight: bold; }
+    .estado-enviado { color: blue; font-weight: bold; }
+    .estado-entregado { color: green; font-weight: bold; }
+    .estado-cancelado { color: red; font-weight: bold; }
+    .pedido-card { padding:10px; border:1px solid #ccc; border-radius:8px; margin-bottom:10px; background:#f9f9f9; }
+  </style>
 </head>
 <body>
 
 <!-- Página principal -->
 <div data-role="page" id="pedidos">
   <div data-role="header">
-    <h1>Pedidos en curso</h1>
+    <h1>Pedidos en curso (<span id="contador-pedidos">0</span>)</h1>
   </div>
 
   <div role="main" class="ui-content">
     <a href="#" id="btn-refresh"
-       class="ui-btn ui-corner-all ui-shadow ui-icon-refresh ui-btn-icon-left">
+       class="ui-btn ui-corner-all ui-shadow ui-icon-refresh ui-btn-icon-left ui-btn-b">
       Refrescar pedidos
     </a>
-    <ul data-role="listview" id="lista-pedidos"></ul>
+    <div id="lista-pedidos"></div>
+  </div>
 
+  <!-- Popup para productos -->
+  <div data-role="popup" id="popup-productos" class="ui-content" style="max-width:400px;">
     <h3>Productos del pedido</h3>
     <ul data-role="listview" id="lista-productos"></ul>
   </div>
@@ -56,54 +67,48 @@ const ESTADOS_PEDIDO = {
   7: "Cancelado"
 };
 
+function claseEstado(estado) {
+  switch(estado) {
+    case "Preparacion en curso": return "estado-preparacion";
+    case "Enviado": return "estado-enviado";
+    case "Entregado": return "estado-entregado";
+    case "Cancelado": return "estado-cancelado";
+    default: return "";
+  }
+}
+
 let pedidosCache = [];
 
-// Función auxiliar para obtener datos de cliente
+// Auxiliares para cliente y dirección
 function obtenerCliente(idCliente, callback) {
   const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try {
-      const data = JSON.parse(resp.data);
-      callback(null, data.customer || {});
-    } catch(e) { callback(e, {}); }
+    try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
+    catch(e) { callback(e, {}); }
   }, function(err) { callback(err, {}); });
 }
 
-// Función auxiliar para obtener datos de dirección
 function obtenerDireccion(idDireccion, callback) {
   const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try {
-      const data = JSON.parse(resp.data);
-      callback(null, data.address || {});
-    } catch(e) { callback(e, {}); }
+    try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
+    catch(e) { callback(e, {}); }
   }, function(err) { callback(err, {}); });
 }
 
 function obtenerPedidosCompletos(idCarrier, callback) {
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
-
   cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
-    try {
-      const data = JSON.parse(response.data);
-      const orders = data.orders || [];
-      callback(null, orders);
-    } catch (e) { callback(e, []); }
+    try { const data = JSON.parse(response.data); callback(null, data.orders || []); }
+    catch (e) { callback(e, []); }
   }, function(error) { callback(error, []); });
 }
 
 function procesarPedidos(idCarrier, callback) {
   obtenerPedidosCompletos(idCarrier, function(err, pedidos) {
     if (err) { callback(err, []); return; }
-
-    const filtrados = pedidos.filter(p =>
-      ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso"
-    );
-
-    // Enriquecer cada pedido con datos de cliente y dirección
-    let enriquecidos = [];
-    let pendientes = filtrados.length;
-
+    const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso");
+    let enriquecidos = [], pendientes = filtrados.length;
     if (pendientes === 0) { callback(null, []); return; }
 
     filtrados.forEach(p => {
@@ -127,31 +132,29 @@ function procesarPedidos(idCarrier, callback) {
 }
 
 function cargarPedidos() {
-  $("#lista-pedidos").empty().append("<li>Cargando...</li>").listview("refresh");
+  $("#lista-pedidos").html("<p>Cargando...</p>");
   procesarPedidos(CARRIER_ID, function(err, pedidos) {
     $("#lista-pedidos").empty();
-    if (err) {
-      $("#lista-pedidos").append("<li>Error al cargar pedidos</li>").listview("refresh");
-      return;
-    }
+    if (err) { $("#lista-pedidos").html("<p>Error al cargar pedidos</p>"); return; }
+    $("#contador-pedidos").text(pedidos.length);
     if (pedidos.length === 0) {
-      $("#lista-pedidos").append("<li>No existen pedidos en 'Preparacion en curso'</li>");
+      $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>");
     } else {
       pedidosCache = pedidos;
       pedidos.forEach(p => {
         $("#lista-pedidos").append(
-          `<li>
-             <h2>Pedido #${p.id}</h2>
-             <p>${p.cliente} (${p.telefono})</p>
-             <p>${p.direccion}</p>
-             <p>Total: ${p.total} | Estado: ${p.estado}</p>
+          `<div class="pedido-card">
+             <h2 class="${claseEstado(p.estado)}">Pedido #${p.id} - ${p.estado}</h2>
+             <p><strong>Cliente:</strong> ${p.cliente}</p>
+             <p><strong>Teléfono:</strong> ${p.telefono}</p>
+             <p><strong>Dirección:</strong> ${p.direccion}</p>
+             <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
-                class="ui-btn ui-mini">Ver productos</a>
-           </li>`
+                class="ui-btn ui-mini ui-btn-b">Ver productos</a>
+           </div>`
         );
       });
     }
-    $("#lista-pedidos").listview("refresh");
   });
 }
 
@@ -160,30 +163,23 @@ function mostrarProductos(pedidoId) {
   $("#lista-productos").empty();
   if (pedido && pedido.productos.length > 0) {
     pedido.productos.forEach(row => {
-      $("#lista-productos").append(
-        `<li>${row.product_name} x${row.product_quantity} - ${row.unit_price_tax_incl}</li>`
-      );
+      $("#lista-productos").append(`<li>${row.product_name} x${row.product_quantity} - ${row.unit_price_tax_incl}</li>`);
     });
   } else {
     $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
   }
   $("#lista-productos").listview("refresh");
+  $("#popup-productos").popup("open");
 }
 
-// Esperar a que Cordova esté listo
 document.addEventListener("deviceready", function() {
-  alert("Cordova listo, plugin HTTP disponible");
-
   $(document).ready(function() {
     $("#btn-refresh").on("click", function() {
-      alert("Me distes click");
+      //alert("Me distes click");
       cargarPedidos();
     });
   });
-
-  $(document).on("pageshow", "#pedidos", function() {
-    cargarPedidos();
-  });
+  $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); });
 }, false);
 </script>
 
