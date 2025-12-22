@@ -29,6 +29,7 @@ jobs:
         cd pedidoapp-jqm
         cordova platform add android
         cordova plugin add cordova-plugin-whitelist
+        cordova plugin add cordova-plugin-advanced-http
 
     - name: Build APK
       run: |

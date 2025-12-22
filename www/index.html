@@ -55,37 +55,58 @@ const ESTADOS_PEDIDO = {
 
 let pedidosCache = [];
 
-async function obtenerPedidosCompletos(idCarrier) {
+function obtenerPedidosCompletos(idCarrier, callback) {
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
-  const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-  const data = await resp.json();
-  return data.orders || [];
+
+  cordova.plugin.http.sendRequest(url, {
+    method: "get",
+    headers: { "Accept": "application/json" }
+  }, function(response) {
+    try {
+      const data = JSON.parse(response.data);
+      callback(null, data.orders || []);
+    } catch (e) {
+      callback(e, []);
+    }
+  }, function(error) {
+    console.error("Error HTTP:", error);
+    callback(error, []);
+  });
 }
 
-async function procesarPedidos(idCarrier) {
-  const pedidos = await obtenerPedidosCompletos(idCarrier);
-  const filtrados = pedidos.filter(p =>
-    ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso"
-  );
+function procesarPedidos(idCarrier, callback) {
+  obtenerPedidosCompletos(idCarrier, function(err, pedidos) {
+    if (err) {
+      callback(err, []);
+      return;
+    }
 
-  pedidosCache = filtrados.map(p => ({
-    id: p.id,
-    cliente: `${p.firstname} ${p.lastname}`,
-    telefono: p.phone || p.phone_mobile || "Teléfono no disponible",
-    direccion: `${p.address1}, ${p.postcode} ${p.city}`,
-    total: p.total_paid,
-    productos: p.associations?.order_rows || [],
-    estado: ESTADOS_PEDIDO[parseInt(p.current_state)] || "Desconocido"
-  }));
+    const filtrados = pedidos.filter(p =>
+      ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso"
+    );
 
-  return pedidosCache;
+    pedidosCache = filtrados.map(p => ({
+      id: p.id,
+      cliente: `${p.firstname} ${p.lastname}`,
+      telefono: p.phone || p.phone_mobile || "Teléfono no disponible",
+      direccion: `${p.address1}, ${p.postcode} ${p.city}`,
+      total: p.total_paid,
+      productos: p.associations?.order_rows || [],
+      estado: ESTADOS_PEDIDO[parseInt(p.current_state)] || "Desconocido"
+    }));
+
+    callback(null, pedidosCache);
+  });
 }
 
-async function cargarPedidos() {
+function cargarPedidos() {
   $("#lista-pedidos").empty().append("<li>Cargando...</li>").listview("refresh");
-  try {
-    const pedidos = await procesarPedidos(CARRIER_ID);
+  procesarPedidos(CARRIER_ID, function(err, pedidos) {
     $("#lista-pedidos").empty();
+    if (err) {
+      $("#lista-pedidos").append("<li>Error al cargar pedidos</li>").listview("refresh");
+      return;
+    }
     if (pedidos.length === 0) {
       $("#lista-pedidos").append("<li>No existen pedidos en 'Preparacion en curso'</li>");
     } else {
@@ -103,10 +124,7 @@ async function cargarPedidos() {
       });
     }
     $("#lista-pedidos").listview("refresh");
-  } catch (err) {
-    $("#lista-pedidos").empty().append("<li>Error al cargar pedidos</li>").listview("refresh");
-    console.error(err);
-  }
+  });
 }
 
 function mostrarProductos(pedidoId) {
