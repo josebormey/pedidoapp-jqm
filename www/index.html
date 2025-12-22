@@ -78,7 +78,25 @@ function claseEstado(estado) {
 }
 
 let pedidosCache = [];
-// --- fin de la primera parte ---
+let notificacionesDisponibles = false;
+
+// Auxiliares para cliente y dirección
+function obtenerCliente(idCliente, callback) {
+  const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
+  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
+    try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
+    catch(e) { callback(e, {}); }
+  }, function(err) { callback(err, {}); });
+}
+
+function obtenerDireccion(idDireccion, callback) {
+  const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`;
+  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
+    try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
+    catch(e) { callback(e, {}); }
+  }, function(err) { callback(err, {}); });
+}
+
 function obtenerPedidosCompletos(idCarrier, callback) {
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
   cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
@@ -114,15 +132,15 @@ function procesarPedidos(idCarrier, callback) {
   });
 }
 
-// Notificación de nuevos pedidos
+// Notificación de nuevos pedidos (solo si el plugin está disponible)
 function notificarNuevosPedidos(pedidos) {
+  if (!notificacionesDisponibles) return;
   pedidos.forEach(p => {
     if (!pedidosCache.find(pc => pc.id == p.id)) {
       cordova.plugins.notification.local.schedule({
         id: p.id,
         title: "Nuevo pedido en curso",
-        text: `Pedido #${p.id} - ${p.cliente} (${p.total})`,
-        foreground: true
+        text: `Pedido #${p.id} - ${p.cliente} (${p.total})`
       });
     }
   });
@@ -137,8 +155,10 @@ function cargarPedidos() {
     if (pedidos.length === 0) {
       $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>");
     } else {
-      notificarNuevosPedidos(pedidos); // 🔔 Notificar nuevos
+      // Notificar nuevos antes de actualizar la caché
+      notificarNuevosPedidos(pedidos);
       pedidosCache = pedidos;
+
       pedidos.forEach(p => {
         $("#lista-pedidos").append(
           `<div class="pedido-card">
@@ -171,10 +191,21 @@ function mostrarProductos(pedidoId) {
 }
 
 document.addEventListener("deviceready", function() {
-  // Pedir permiso para notificaciones
-  cordova.plugins.notification.local.requestPermission(function(granted) {
-    console.log("Permiso notificaciones:", granted);
-  });
+  // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
+  try {
+    if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
+      cordova.plugins.notification.local.requestPermission(function(granted) {
+        notificacionesDisponibles = !!granted;
+        console.log("Permiso notificaciones:", granted);
+      });
+    } else {
+      notificacionesDisponibles = false;
+      console.log("Plugin de notificaciones no disponible.");
+    }
+  } catch(e) {
+    notificacionesDisponibles = false;
+    console.log("Error inicializando notificaciones:", e);
+  }
 
   $(document).ready(function() {
     $("#btn-refresh").on("click", function() {
@@ -191,4 +222,3 @@ document.addEventListener("deviceready", function() {
 
 </body>
 </html>
-<!-- fin de la segunda parte -->
