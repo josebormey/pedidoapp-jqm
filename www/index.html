@@ -68,15 +68,19 @@ function obtenerPedidosCompletos(idCarrier, callback) {
     }, function(response) {
       try {
         console.log("Respuesta cruda:", response.data);
+        // Mostrar fragmento en pantalla para depuración
+        $("#lista-pedidos").append("<li>Respuesta cruda: " + response.data.substring(0,200) + "...</li>").listview("refresh");
         const data = JSON.parse(response.data);
-        callback(null, data.orders || []);
+        // Intentar distintas estructuras
+        const orders = data.orders || data.orders?.order || [];
+        callback(null, orders);
       } catch (e) {
-        $("#lista-pedidos").append("<li>Error parseando JSON</li>").listview("refresh");
+        $("#lista-pedidos").append("<li>Error parseando JSON: " + e.message + "</li>").listview("refresh");
         callback(e, []);
       }
     }, function(error) {
-      $("#lista-pedidos").append("<li>Error HTTP: " + JSON.stringify(error) + "</li>").listview("refresh");
       console.error("Error HTTP:", error);
+      $("#lista-pedidos").append("<li>Error HTTP: " + JSON.stringify(error) + "</li>").listview("refresh");
       callback(error, []);
     });
   } else {
