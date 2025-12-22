@@ -68,12 +68,20 @@ function obtenerPedidosCompletos(idCarrier, callback) {
     }, function(response) {
       try {
         console.log("Respuesta cruda:", response.data);
-        // Mostrar toda la respuesta en pantalla (escapando caracteres <)
-        $("#lista-pedidos").append("<li>Respuesta completa: " + response.data.replace(/</g,"&lt;") + "</li>").listview("refresh");
+        // Mostrar fragmento en pantalla para depuración
+        $("#lista-pedidos").append("<li>Respuesta cruda: " + response.data.substring(0,300).replace(/</g,"&lt;") + "...</li>").listview("refresh");
         const data = JSON.parse(response.data);
-        // Mostrar claves principales
-        $("#lista-pedidos").append("<li>Claves en data: " + Object.keys(data) + "</li>").listview("refresh");
-        const orders = data.orders?.order || data.orders || [];
+
+        // Parseo robusto de orders
+        let orders = [];
+        if (Array.isArray(data.orders)) {
+          orders = data.orders;
+        } else if (data.orders && Array.isArray(data.orders.order)) {
+          orders = data.orders.order;
+        } else if (data.orders && data.orders.order) {
+          orders = [data.orders.order]; // caso único pedido
+        }
+
         callback(null, orders);
       } catch (e) {
         $("#lista-pedidos").append("<li>Error parseando JSON: " + e.message + "</li>").listview("refresh");
@@ -161,7 +169,7 @@ function mostrarProductos(pedidoId) {
 // Esperar a que Cordova esté listo
 document.addEventListener("deviceready", function() {
   alert("Cordova listo, plugin HTTP disponible");
-  $(document).on("pageinit", "#pedidos", function() {
+  $(document).on("pageshow", "#pedidos", function() {
     $("#btn-refresh").on("click", cargarPedidos);
     cargarPedidos();
   });
