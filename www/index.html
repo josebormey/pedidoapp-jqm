@@ -68,11 +68,12 @@ function obtenerPedidosCompletos(idCarrier, callback) {
     }, function(response) {
       try {
         console.log("Respuesta cruda:", response.data);
-        // Mostrar fragmento en pantalla para depuración
-        $("#lista-pedidos").append("<li>Respuesta cruda: " + response.data.substring(0,200) + "...</li>").listview("refresh");
+        // Mostrar toda la respuesta en pantalla (escapando caracteres <)
+        $("#lista-pedidos").append("<li>Respuesta completa: " + response.data.replace(/</g,"&lt;") + "</li>").listview("refresh");
         const data = JSON.parse(response.data);
-        // Intentar distintas estructuras
-        const orders = data.orders || data.orders?.order || [];
+        // Mostrar claves principales
+        $("#lista-pedidos").append("<li>Claves en data: " + Object.keys(data) + "</li>").listview("refresh");
+        const orders = data.orders?.order || data.orders || [];
         callback(null, orders);
       } catch (e) {
         $("#lista-pedidos").append("<li>Error parseando JSON: " + e.message + "</li>").listview("refresh");
