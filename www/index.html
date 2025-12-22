@@ -160,13 +160,17 @@ function mostrarProductos(pedidoId) {
 // Esperar a que Cordova esté listo
 document.addEventListener("deviceready", function() {
   alert("Cordova listo, plugin HTTP disponible");
-  $(document).on("pageshow", "#pedidos", function() {
-    // Evento del botón con alert
+
+  // Enganchar el evento del botón directamente
+  $(document).ready(function() {
     $("#btn-refresh").on("click", function() {
       alert("Me distes click");
       cargarPedidos();
     });
-    // Cargar pedidos automáticamente al entrar
+  });
+
+  // Cargar pedidos automáticamente al entrar en la página
+  $(document).on("pageshow", "#pedidos", function() {
     cargarPedidos();
   });
 }, false);
