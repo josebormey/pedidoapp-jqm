@@ -17,6 +17,9 @@
         href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
   <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
   <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+
+  <!-- Cordova -->
+  <script src="cordova.js"></script>
 </head>
 <body>
 
@@ -58,22 +61,28 @@ let pedidosCache = [];
 function obtenerPedidosCompletos(idCarrier, callback) {
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
 
-  cordova.plugin.http.sendRequest(url, {
-    method: "get",
-    headers: { "Accept": "application/json" }
-  }, function(response) {
-    try {
-      console.log("Respuesta cruda:", response.data);
-      const data = JSON.parse(response.data);
-      callback(null, data.orders || []);
-    } catch (e) {
-      console.error("Error parseando JSON:", e);
-      callback(e, []);
-    }
-  }, function(error) {
-    console.error("Error HTTP:", error);
-    callback(error, []);
-  });
+  if (cordova && cordova.plugin && cordova.plugin.http) {
+    cordova.plugin.http.sendRequest(url, {
+      method: "get",
+      headers: { "Accept": "application/json" }
+    }, function(response) {
+      try {
+        console.log("Respuesta cruda:", response.data);
+        const data = JSON.parse(response.data);
+        callback(null, data.orders || []);
+      } catch (e) {
+        $("#lista-pedidos").append("<li>Error parseando JSON</li>").listview("refresh");
+        callback(e, []);
+      }
+    }, function(error) {
+      $("#lista-pedidos").append("<li>Error HTTP: " + JSON.stringify(error) + "</li>").listview("refresh");
+      console.error("Error HTTP:", error);
+      callback(error, []);
+    });
+  } else {
+    $("#lista-pedidos").append("<li>Plugin HTTP no disponible</li>").listview("refresh");
+    callback(new Error("Plugin no disponible"), []);
+  }
 }
 
 function procesarPedidos(idCarrier, callback) {
@@ -146,7 +155,7 @@ function mostrarProductos(pedidoId) {
 
 // Esperar a que Cordova esté listo
 document.addEventListener("deviceready", function() {
-  console.log("Cordova listo, inicializando app...");
+  alert("Cordova listo, plugin HTTP disponible");
   $(document).on("pageinit", "#pedidos", function() {
     $("#btn-refresh").on("click", cargarPedidos);
     cargarPedidos();
