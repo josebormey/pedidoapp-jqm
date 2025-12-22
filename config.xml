@@ -6,9 +6,15 @@
     <description>App ECGA con jQuery Mobile</description>
     <author email="jose@example.com">Jose</author>
     <content src="index.html" />
+
+    <!-- Plugins -->
     <plugin name="cordova-plugin-whitelist" spec="1" />
-    <allow-navigation href="*" />
+
+    <!-- Permisos de navegación y acceso -->
     <access origin="*" />
+    <allow-navigation href="*" />
+    <allow-intent href="*" />
+
     <platform name="android">
         <allow-intent href="market:*" />
     </platform>

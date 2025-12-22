@@ -28,6 +28,7 @@ jobs:
         cp config.xml pedidoapp-jqm/config.xml
         cd pedidoapp-jqm
         cordova platform add android
+        cordova plugin add cordova-plugin-whitelist
 
     - name: Build APK
       run: |

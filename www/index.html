@@ -4,8 +4,17 @@
   <meta charset="utf-8">
   <title>PedidoApp JQM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Política de seguridad para Cordova -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src * 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval';
+                 style-src * 'self' 'unsafe-inline';
+                 script-src * 'self' 'unsafe-inline' 'unsafe-eval';
+                 media-src *">
+
   <!-- jQuery y jQuery Mobile -->
-  <link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+  <link rel="stylesheet"
+        href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
   <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
   <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
 </head>
@@ -18,7 +27,8 @@
   </div>
 
   <div role="main" class="ui-content">
-    <a href="#" id="btn-refresh" class="ui-btn ui-corner-all ui-shadow ui-icon-refresh ui-btn-icon-left">
+    <a href="#" id="btn-refresh"
+       class="ui-btn ui-corner-all ui-shadow ui-icon-refresh ui-btn-icon-left">
       Refrescar pedidos
     </a>
     <ul data-role="listview" id="lista-pedidos"></ul>
@@ -54,7 +64,9 @@ async function obtenerPedidosCompletos(idCarrier) {
 
 async function procesarPedidos(idCarrier) {
   const pedidos = await obtenerPedidosCompletos(idCarrier);
-  const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso");
+  const filtrados = pedidos.filter(p =>
+    ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso"
+  );
 
   pedidosCache = filtrados.map(p => ({
     id: p.id,
@@ -84,7 +96,8 @@ async function cargarPedidos() {
              <p>${p.cliente} (${p.telefono})</p>
              <p>${p.direccion}</p>
              <p>Total: ${p.total} | Estado: ${p.estado}</p>
-             <a href="#" onclick="mostrarProductos(${p.id})" class="ui-btn ui-mini">Ver productos</a>
+             <a href="#" onclick="mostrarProductos(${p.id})"
+                class="ui-btn ui-mini">Ver productos</a>
            </li>`
         );
       });
