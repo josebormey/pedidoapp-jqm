@@ -79,7 +79,6 @@ function claseEstado(estado) {
 
 let pedidosCache = [];
 // --- fin de la primera parte ---
-// --- continuación del script ---
 function obtenerPedidosCompletos(idCarrier, callback) {
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
   cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
@@ -179,15 +178,14 @@ document.addEventListener("deviceready", function() {
 
   $(document).ready(function() {
     $("#btn-refresh").on("click", function() {
-      alert("Me distes click");
       cargarPedidos();
     });
   });
 
   $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); });
 
-  // Chequeo automático cada 5 minutos
-  setInterval(cargarPedidos, 5 * 60 * 1000);
+  // Chequeo automático cada 1 minuto
+  setInterval(cargarPedidos, 60 * 1000);
 }, false);
 </script>
 
