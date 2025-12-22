@@ -63,9 +63,11 @@ function obtenerPedidosCompletos(idCarrier, callback) {
     headers: { "Accept": "application/json" }
   }, function(response) {
     try {
+      console.log("Respuesta cruda:", response.data);
       const data = JSON.parse(response.data);
       callback(null, data.orders || []);
     } catch (e) {
+      console.error("Error parseando JSON:", e);
       callback(e, []);
     }
   }, function(error) {
@@ -142,10 +144,14 @@ function mostrarProductos(pedidoId) {
   $("#lista-productos").listview("refresh");
 }
 
-$(document).on("pageinit", "#pedidos", function() {
-  $("#btn-refresh").on("click", cargarPedidos);
-  cargarPedidos();
-});
+// Esperar a que Cordova esté listo
+document.addEventListener("deviceready", function() {
+  console.log("Cordova listo, inicializando app...");
+  $(document).on("pageinit", "#pedidos", function() {
+    $("#btn-refresh").on("click", cargarPedidos);
+    cargarPedidos();
+  });
+}, false);
 </script>
 
 </body>
