@@ -68,19 +68,10 @@ function obtenerPedidosCompletos(idCarrier, callback) {
     }, function(response) {
       try {
         console.log("Respuesta cruda:", response.data);
-        // Mostrar fragmento en pantalla para depuración
-        $("#lista-pedidos").append("<li>Respuesta cruda: " + response.data.substring(0,300).replace(/</g,"&lt;") + "...</li>").listview("refresh");
         const data = JSON.parse(response.data);
 
-        // Parseo robusto de orders
-        let orders = [];
-        if (Array.isArray(data.orders)) {
-          orders = data.orders;
-        } else if (data.orders && Array.isArray(data.orders.order)) {
-          orders = data.orders.order;
-        } else if (data.orders && data.orders.order) {
-          orders = [data.orders.order]; // caso único pedido
-        }
+        // Aquí sabemos que siempre es un array
+        const orders = data.orders || [];
 
         callback(null, orders);
       } catch (e) {
@@ -111,9 +102,9 @@ function procesarPedidos(idCarrier, callback) {
 
     pedidosCache = filtrados.map(p => ({
       id: p.id,
-      cliente: `${p.firstname} ${p.lastname}`,
+      cliente: `${p.firstname || ""} ${p.lastname || ""}`,
       telefono: p.phone || p.phone_mobile || "Teléfono no disponible",
-      direccion: `${p.address1}, ${p.postcode} ${p.city}`,
+      direccion: `${p.address1 || ""}, ${p.postcode || ""} ${p.city || ""}`,
       total: p.total_paid,
       productos: p.associations?.order_rows || [],
       estado: ESTADOS_PEDIDO[parseInt(p.current_state)] || "Desconocido"
@@ -170,9 +161,13 @@ function mostrarProductos(pedidoId) {
 document.addEventListener("deviceready", function() {
   alert("Cordova listo, plugin HTTP disponible");
   $(document).on("pageshow", "#pedidos", function() {
-    $("#btn-refresh").on("click", cargarPedidos);
-    alert("Me distes click");
-	cargarPedidos();
+    // Evento del botón con alert
+    $("#btn-refresh").on("click", function() {
+      alert("Me distes click");
+      cargarPedidos();
+    });
+    // Cargar pedidos automáticamente al entrar
+    cargarPedidos();
   });
 }, false);
 </script>
