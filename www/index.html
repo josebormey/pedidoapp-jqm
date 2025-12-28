@@ -57,6 +57,9 @@ const API_URL = "https://www.ferroclimaexpress.com/api";
 const WS_KEY = "B4KYF7LZ714FYZ5KADYM6TZCCKCVS4Q7";
 const CARRIER_ID = 6;
 
+// Estado al que se moverá el pedido al cerrarlo (ejemplo: Entregado = 6)
+const ESTADO_CERRADO = 6;
+
 const ESTADOS_PEDIDO = {
   1: "Pendiente de pago",
   2: "Pago aceptado",
@@ -79,24 +82,7 @@ function claseEstado(estado) {
 
 let pedidosCache = [];
 let notificacionesDisponibles = false;
-
-// Auxiliares para cliente y dirección
-function obtenerCliente(idCliente, callback) {
-  const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
-    catch(e) { callback(e, {}); }
-  }, function(err) { callback(err, {}); });
-}
-
-function obtenerDireccion(idDireccion, callback) {
-  const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
-    catch(e) { callback(e, {}); }
-  }, function(err) { callback(err, {}); });
-}
-
+// --- fin de la primera parte ---
 function obtenerPedidosCompletos(idCarrier, callback) {
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
   cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
@@ -132,17 +118,32 @@ function procesarPedidos(idCarrier, callback) {
   });
 }
 
-// Notificación de nuevos pedidos (solo si el plugin está disponible)
-function notificarNuevosPedidos(pedidos) {
-  if (!notificacionesDisponibles) return;
-  pedidos.forEach(p => {
-    if (!pedidosCache.find(pc => pc.id == p.id)) {
-      cordova.plugins.notification.local.schedule({
-        id: p.id,
-        title: "Nuevo pedido en curso",
-        text: `Pedido #${p.id} - ${p.cliente} (${p.total})`
-      });
+// Cambiar estado del pedido en PrestaShop
+function cerrarPedido(pedidoId) {
+  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+
+  const xmlData = `
+    <prestashop>
+      <order>
+        <id><![CDATA[${pedidoId}]]></id>
+        <current_state><![CDATA[${ESTADO_CERRADO}]]></current_state>
+      </order>
+    </prestashop>
+  `;
+
+  cordova.plugin.http.sendRequest(url, {
+    method: "put",
+    data: xmlData,
+    headers: {
+      "Content-Type": "application/xml",
+      "Accept": "application/json"
     }
+  }, function(response) {
+    alert("Pedido #" + pedidoId + " cerrado exitosamente");
+    cargarPedidos(); // refrescar lista
+  }, function(error) {
+    console.error("Error cerrando pedido:", error);
+    alert("Error al cerrar el pedido");
   });
 }
 
@@ -155,10 +156,7 @@ function cargarPedidos() {
     if (pedidos.length === 0) {
       $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>");
     } else {
-      // Notificar nuevos antes de actualizar la caché
-      notificarNuevosPedidos(pedidos);
       pedidosCache = pedidos;
-
       pedidos.forEach(p => {
         $("#lista-pedidos").append(
           `<div class="pedido-card">
@@ -169,7 +167,7 @@ function cargarPedidos() {
              <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-			 <a href="#" onclick="cerrarPedido(${p.id})"
+             <a href="#" onclick="cerrarPedido(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
            </div>`
         );
@@ -192,41 +190,10 @@ function mostrarProductos(pedidoId) {
   $("#popup-productos").popup("open");
 }
 
-function cerrarPedido(pedidoId) {
-  const pedido = pedidosCache.find(p => p.id == pedidoId);
-  $("#lista-productos").empty();
-  if (pedido && pedido.productos.length > 0) {
-    pedido.productos.forEach(row => {
-      $("#lista-productos").append(`<li>Pedido cerrado exitosamente</li>`);
-    });
-  } else {
-    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
-  }
-  $("#lista-productos").listview("refresh");
-  $("#popup-productos").popup("open");
-}
-
 document.addEventListener("deviceready", function() {
-  // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
-  try {
-    if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-      cordova.plugins.notification.local.requestPermission(function(granted) {
-        notificacionesDisponibles = !!granted;
-        console.log("Permiso notificaciones:", granted);
-      });
-    } else {
-      notificacionesDisponibles = false;
-      console.log("Plugin de notificaciones no disponible.");
-    }
-  } catch(e) {
-    notificacionesDisponibles = false;
-    console.log("Error inicializando notificaciones:", e);
-  }
-
-  $(document).ready(function() {
-    $("#btn-refresh").on("click", function() {
-      cargarPedidos();
-    });
+  document.getElementById("btn-refresh").addEventListener("click", function(e) {
+    e.preventDefault();
+    cargarPedidos();
   });
 
   $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); });
@@ -238,3 +205,4 @@ document.addEventListener("deviceready", function() {
 
 </body>
 </html>
+<!-- fin de la segunda parte -->
