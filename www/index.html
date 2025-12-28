@@ -1,62 +1,62 @@
-<!DOCTYPE html>
+<!DOCTYPE html> <!-- Define el tipo de documento como HTML5 -->
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>PedidoApp JQM</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8"> <!-- Configura la codificación de caracteres en UTF-8 -->
+  <title>PedidoApp JQM</title> <!-- Título de la aplicación -->
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Ajusta la vista en móviles -->
 
   <!-- Política de seguridad para Cordova -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src * 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval';
                  style-src * 'self' 'unsafe-inline';
                  script-src * 'self' 'unsafe-inline' 'unsafe-eval';
-                 media-src *">
+                 media-src *"> <!-- Define reglas de seguridad para recursos -->
 
   <!-- jQuery y jQuery Mobile -->
-  <link rel="stylesheet" href="css/jquery.mobile-1.4.5.min.css">
-  <script src="js/jquery-1.11.1.min.js"></script>
-  <script src="js/jquery.mobile-1.4.5.min.js"></script>
+  <link rel="stylesheet" href="css/jquery.mobile-1.4.5.min.css"> <!-- Estilos de jQuery Mobile -->
+  <script src="js/jquery-1.11.1.min.js"></script> <!-- Librería jQuery -->
+  <script src="js/jquery.mobile-1.4.5.min.js"></script> <!-- Librería jQuery Mobile -->
 
   <!-- Cordova -->
-  <script src="cordova.js"></script>
+  <script src="cordova.js"></script> <!-- Script de Cordova para funciones nativas -->
 
   <style>
-    .estado-preparacion { color: orange; font-weight: bold; }
-    .estado-enviado { color: blue; font-weight: bold; }
-    .estado-entregado { color: green; font-weight: bold; }
-    .estado-cancelado { color: red; font-weight: bold; }
-    .pedido-card { padding:10px; border:1px solid #ccc; border-radius:8px; margin-bottom:10px; background:#f9f9f9; }
+    .estado-preparacion { color: orange; font-weight: bold; } <!-- Clase CSS para estado preparación -->
+    .estado-enviado { color: blue; font-weight: bold; } <!-- Clase CSS para estado enviado -->
+    .estado-entregado { color: green; font-weight: bold; } <!-- Clase CSS para estado entregado -->
+    .estado-cancelado { color: red; font-weight: bold; } <!-- Clase CSS para estado cancelado -->
+    .pedido-card { padding:10px; border:1px solid #ccc; border-radius:8px; margin-bottom:10px; background:#f9f9f9; } <!-- Estilo para tarjeta de pedido -->
   </style>
 </head>
 <body>
 
 <!-- Página principal -->
-<div data-role="page" id="pedidos">
-  <div data-role="header">
-    <h1>Pedidos en curso (<span id="contador-pedidos">0</span>)</h1>
+<div data-role="page" id="pedidos"> <!-- Define una página en jQuery Mobile -->
+  <div data-role="header"> <!-- Encabezado -->
+    <h1>Pedidos en curso (<span id="contador-pedidos">0</span>)</h1> <!-- Título con contador de pedidos -->
   </div>
 
-  <div role="main" class="ui-content">
+  <div role="main" class="ui-content"> <!-- Contenido principal -->
     <a href="#" id="btn-refresh"
        class="ui-btn ui-corner-all ui-shadow ui-icon-refresh ui-btn-icon-left ui-btn-b">
-      Refrescar pedidos
+      Refrescar pedidos <!-- Botón para refrescar pedidos -->
     </a>
-    <div id="lista-pedidos"></div>
+    <div id="lista-pedidos"></div> <!-- Contenedor donde se mostrarán los pedidos -->
   </div>
 
   <!-- Popup para productos -->
-  <div data-role="popup" id="popup-productos" class="ui-content" style="max-width:400px;">
+  <div data-role="popup" id="popup-productos" class="ui-content" style="max-width:400px;"> <!-- Ventana emergente -->
     <h3>Productos del pedido</h3>
-    <ul data-role="listview" id="lista-productos"></ul>
+    <ul data-role="listview" id="lista-productos"></ul> <!-- Lista de productos -->
   </div>
 </div>
 
 <script>
-const API_URL = "https://www.ferroclimaexpress.com/api";
-const WS_KEY = "B4KYF7LZ714FYZ5KADYM6TZCCKCVS4Q7";
-const CARRIER_ID = 6;
+const API_URL = "https://www.ferroclimaexpress.com/api"; // URL base de la API
+const WS_KEY = "B4KYF7LZ714FYZ5KADYM6TZCCKCVS4Q7"; // Clave de acceso a la API
+const CARRIER_ID = 6; // ID del transportista
 
-const ESTADOS_PEDIDO = {
+const ESTADOS_PEDIDO = { // Diccionario de estados de pedido
   1: "Pendiente de pago",
   2: "Pago aceptado",
   3: "Preparacion en curso",
@@ -66,7 +66,7 @@ const ESTADOS_PEDIDO = {
   7: "Cancelado"
 };
 
-function claseEstado(estado) {
+function claseEstado(estado) { // Devuelve la clase CSS según el estado
   switch(estado) {
     case "Preparacion en curso": return "estado-preparacion";
     case "Enviado": return "estado-enviado";
@@ -76,45 +76,44 @@ function claseEstado(estado) {
   }
 }
 
-let pedidosCache = [];
-let notificacionesDisponibles = false;
-
+let pedidosCache = []; // Caché de pedidos cargados
+let notificacionesDisponibles = false; // Bandera para saber si hay notificaciones disponibles
 // Auxiliares para cliente y dirección
-function obtenerCliente(idCliente, callback) {
-  const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
-    catch(e) { callback(e, {}); }
-  }, function(err) { callback(err, {}); });
+function obtenerCliente(idCliente, callback) { // Obtiene datos del cliente
+  const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`; // Construye URL
+  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) { // Llama a la API
+    try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); } // Si éxito, devuelve cliente
+    catch(e) { callback(e, {}); } // Si error, devuelve objeto vacío
+  }, function(err) { callback(err, {}); }); // Manejo de error
 }
 
-function obtenerDireccion(idDireccion, callback) {
-  const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
-    catch(e) { callback(e, {}); }
-  }, function(err) { callback(err, {}); });
+function obtenerDireccion(idDireccion, callback) { // Obtiene dirección de entrega
+  const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`; // Construye URL
+  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) { // Llama a la API
+    try { const data = JSON.parse(resp.data); callback(null, data.address || {}); } // Devuelve dirección
+    catch(e) { callback(e, {}); } // Manejo de error
+  }, function(err) { callback(err, {}); }); // Manejo de error
 }
 
-function obtenerPedidosCompletos(idCarrier, callback) {
-  const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
-  cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
-    try { const data = JSON.parse(response.data); callback(null, data.orders || []); }
-    catch (e) { callback(e, []); }
-  }, function(error) { callback(error, []); });
+function obtenerPedidosCompletos(idCarrier, callback) { // Obtiene pedidos completos
+  const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`; // Construye URL
+  cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) { // Llama a la API
+    try { const data = JSON.parse(response.data); callback(null, data.orders || []); } // Devuelve lista de pedidos
+    catch (e) { callback(e, []); } // Manejo de error
+  }, function(error) { callback(error, []); }); // Manejo de error
 }
 
-function procesarPedidos(idCarrier, callback) {
+function procesarPedidos(idCarrier, callback) { // Procesa pedidos filtrando y enriqueciendo datos
   obtenerPedidosCompletos(idCarrier, function(err, pedidos) {
-    if (err) { callback(err, []); return; }
-    const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso");
-    let enriquecidos = [], pendientes = filtrados.length;
-    if (pendientes === 0) { callback(null, []); return; }
+    if (err) { callback(err, []); return; } // Si error, devuelve vacío
+    const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso"); // Filtra pedidos en preparación
+    let enriquecidos = [], pendientes = filtrados.length; // Inicializa lista enriquecida
+    if (pendientes === 0) { callback(null, []); return; } // Si no hay, devuelve vacío
 
-    filtrados.forEach(p => {
-      obtenerCliente(p.id_customer, function(errC, cliente) {
-        obtenerDireccion(p.id_address_delivery, function(errD, direccion) {
-          enriquecidos.push({
+    filtrados.forEach(p => { // Recorre pedidos filtrados
+      obtenerCliente(p.id_customer, function(errC, cliente) { // Obtiene cliente
+        obtenerDireccion(p.id_address_delivery, function(errD, direccion) { // Obtiene dirección
+          enriquecidos.push({ // Construye objeto enriquecido
             id: p.id,
             cliente: `${cliente.firstname || ""} ${cliente.lastname || ""}`,
             telefono: direccion.phone || direccion.phone_mobile || "Teléfono no disponible",
@@ -123,8 +122,8 @@ function procesarPedidos(idCarrier, callback) {
             productos: p.associations?.order_rows || [],
             estado: ESTADOS_PEDIDO[parseInt(p.current_state)] || "Desconocido"
           });
-          pendientes--;
-          if (pendientes === 0) callback(null, enriquecidos);
+          pendientes--; // Resta pendiente
+          if (pendientes === 0) callback(null, enriquecidos); // Si terminó, devuelve lista
         });
       });
     });
@@ -133,10 +132,10 @@ function procesarPedidos(idCarrier, callback) {
 
 // Notificación de nuevos pedidos (solo si el plugin está disponible)
 function notificarNuevosPedidos(pedidos) {
-  if (!notificacionesDisponibles) return;
-  pedidos.forEach(p => {
-    if (!pedidosCache.find(pc => pc.id == p.id)) {
-      cordova.plugins.notification.local.schedule({
+  if (!notificacionesDisponibles) return; // Si no hay notificaciones, salir
+  pedidos.forEach(p => { // Recorre pedidos
+    if (!pedidosCache.find(pc => pc.id == p.id)) { // Si no está en caché
+      cordova.plugins.notification.local.schedule({ // Programa notificación local
         id: p.id,
         title: "Nuevo pedido en curso",
         text: `Pedido #${p.id} - ${p.cliente} (${p.total})`
@@ -145,20 +144,20 @@ function notificarNuevosPedidos(pedidos) {
   });
 }
 
-function cargarPedidos() {
-  $("#lista-pedidos").html("<p>Cargando...</p>");
-  procesarPedidos(CARRIER_ID, function(err, pedidos) {
-    $("#lista-pedidos").empty();
-    if (err) { $("#lista-pedidos").html("<p>Error al cargar pedidos</p>"); return; }
-    $("#contador-pedidos").text(pedidos.length);
+function cargarPedidos() { // Carga pedidos en la interfaz
+  $("#lista-pedidos").html("<p>Cargando...</p>"); // Muestra mensaje de carga
+  procesarPedidos(CARRIER_ID, function(err, pedidos) { // Procesa pedidos
+    $("#lista-pedidos").empty(); // Limpia lista
+    if (err) { $("#lista-pedidos").html("<p>Error al cargar pedidos</p>"); return; } // Si error, muestra mensaje
+    $("#contador-pedidos").text(pedidos.length); // Actualiza contador
     if (pedidos.length === 0) {
-      $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>");
+      $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>"); // Mensaje si no hay pedidos
     } else {
       // Notificar nuevos antes de actualizar la caché
       notificarNuevosPedidos(pedidos);
-      pedidosCache = pedidos;
+      pedidosCache = pedidos; // Actualiza caché
 
-      pedidos.forEach(p => {
+      pedidos.forEach(p => { // Recorre pedidos y los muestra
         $("#lista-pedidos").append(
           `<div class="pedido-card">
              <h2 class="${claseEstado(p.estado)}">Pedido #${p.id} - ${p.estado}</h2>
@@ -168,7 +167,7 @@ function cargarPedidos() {
              <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-			 <a href="#" onclick="cerrarPedido(${p.id})"
+             <a href="#" onclick="cerrarPedido(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
            </div>`
         );
@@ -177,40 +176,40 @@ function cargarPedidos() {
   });
 }
 
-function mostrarProductos(pedidoId) {
-  const pedido = pedidosCache.find(p => p.id == pedidoId);
-  $("#lista-productos").empty();
+function mostrarProductos(pedidoId) { // Muestra productos de un pedido
+  const pedido = pedidosCache.find(p => p.id == pedidoId); // Busca pedido en caché
+  $("#lista-productos").empty(); // Limpia lista
   if (pedido && pedido.productos.length > 0) {
     pedido.productos.forEach(row => {
-      $("#lista-productos").append(`<li>${row.product_name} x${row.product_quantity} - ${row.unit_price_tax_incl}</li>`);
+      $("#lista-productos").append(`<li>${row.product_name} x${row.product_quantity} - ${row.unit_price_tax_incl}</li>`); // Agrega producto
     });
   } else {
-    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
+    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>"); // Mensaje si no hay productos
   }
-  $("#lista-productos").listview("refresh");
-  $("#popup-productos").popup("open");
+  $("#lista-productos").listview("refresh"); // Refresca lista
+  $("#popup-productos").popup("open"); // Abre popup
 }
 
-function cerrarPedido(pedidoId) {
-  const pedido = pedidosCache.find(p => p.id == pedidoId);
-  $("#lista-productos").empty();
+function cerrarPedido(pedidoId) { // Simula cierre de pedido
+  const pedido = pedidosCache.find(p => p.id == pedidoId); // Busca pedido
+  $("#lista-productos").empty(); // Limpia lista
   if (pedido && pedido.productos.length > 0) {
     pedido.productos.forEach(row => {
-      $("#lista-productos").append(`<li>Pedido cerrado exitosamente</li>`);
+      $("#lista-productos").append(`<li>Pedido cerrado exitosamente</li>`); // Mensaje de cierre
     });
   } else {
-    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
+    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>"); // Mensaje si no hay productos
   }
-  $("#lista-productos").listview("refresh");
-  $("#popup-productos").popup("open");
+  $("#lista-productos").listview("refresh"); // Refresca lista
+  $("#popup-productos").popup("open"); // Abre popup
 }
 
-document.addEventListener("deviceready", function() {
+document.addEventListener("deviceready", function() { // Evento cuando el dispositivo está listo
   // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
   try {
     if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
       cordova.plugins.notification.local.requestPermission(function(granted) {
-        notificacionesDisponibles = !!granted;
+        notificacionesDisponibles = !!granted; // Guarda si se concedió permiso
         console.log("Permiso notificaciones:", granted);
       });
     } else {
@@ -222,16 +221,16 @@ document.addEventListener("deviceready", function() {
     console.log("Error inicializando notificaciones:", e);
   }
 
-  $(document).ready(function() {
-    $("#btn-refresh").on("click", function() {
-      cargarPedidos();
+  $(document).ready(function() { // Cuando el DOM está listo
+    $("#btn-refresh").on("click", function() { // Evento click en botón refrescar
+      cargarPedidos(); // Llama a cargar pedidos
     });
   });
 
-  $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); });
+  $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); }); // Al mostrar la página, carga pedidos
 
   // Chequeo automático cada 1 minuto
-  setInterval(cargarPedidos, 60 * 1000);
+  setInterval(cargarPedidos, 60 * 1000); // Refresca pedidos cada minuto
 }, false);
 </script>
 
