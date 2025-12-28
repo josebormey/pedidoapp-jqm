@@ -194,7 +194,7 @@ function mostrarProductos(pedidoId) {
 
 function cerrarPedido(pedidoId) {
   const pedido = pedidosCache.find(p => p.id == pedidoId);
-  alert(pedido);
+  $("#lista-pedidos").html("<p>Error al cargar pedidos</p>");
 }
 
 document.addEventListener("deviceready", function() {
