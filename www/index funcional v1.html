@@ -14,9 +14,9 @@
 
   <!-- jQuery y jQuery Mobile -->
   <link rel="stylesheet"
-        href="css/jquery.mobile-1.4.5.min.css">
-  <script src="js/jquery-1.11.1.min.js"></script>
-  <script src="js/jquery.mobile-1.4.5.min.js"></script>
+        href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css">
+  <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
 
   <!-- Cordova -->
   <script src="cordova.js"></script>
@@ -78,7 +78,6 @@ function claseEstado(estado) {
 }
 
 let pedidosCache = [];
-let notificacionesDisponibles = false;
 
 // Auxiliares para cliente y dirección
 function obtenerCliente(idCliente, callback) {
@@ -132,20 +131,6 @@ function procesarPedidos(idCarrier, callback) {
   });
 }
 
-// Notificación de nuevos pedidos (solo si el plugin está disponible)
-function notificarNuevosPedidos(pedidos) {
-  if (!notificacionesDisponibles) return;
-  pedidos.forEach(p => {
-    if (!pedidosCache.find(pc => pc.id == p.id)) {
-      cordova.plugins.notification.local.schedule({
-        id: p.id,
-        title: "Nuevo pedido en curso",
-        text: `Pedido #${p.id} - ${p.cliente} (${p.total})`
-      });
-    }
-  });
-}
-
 function cargarPedidos() {
   $("#lista-pedidos").html("<p>Cargando...</p>");
   procesarPedidos(CARRIER_ID, function(err, pedidos) {
@@ -155,10 +140,7 @@ function cargarPedidos() {
     if (pedidos.length === 0) {
       $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>");
     } else {
-      // Notificar nuevos antes de actualizar la caché
-      notificarNuevosPedidos(pedidos);
       pedidosCache = pedidos;
-
       pedidos.forEach(p => {
         $("#lista-pedidos").append(
           `<div class="pedido-card">
@@ -169,8 +151,6 @@ function cargarPedidos() {
              <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-			 <a href="#" onclick="cerrarPedido(${p.id})"
-                class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
            </div>`
         );
       });
@@ -192,38 +172,14 @@ function mostrarProductos(pedidoId) {
   $("#popup-productos").popup("open");
 }
 
-function cerrarPedido(pedidoId) {
-  const pedido = pedidosCache.find(p => p.id == pedidoId);
-  alert(pedido);
-}
-
 document.addEventListener("deviceready", function() {
-  // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
-  try {
-    if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
-      cordova.plugins.notification.local.requestPermission(function(granted) {
-        notificacionesDisponibles = !!granted;
-        console.log("Permiso notificaciones:", granted);
-      });
-    } else {
-      notificacionesDisponibles = false;
-      console.log("Plugin de notificaciones no disponible.");
-    }
-  } catch(e) {
-    notificacionesDisponibles = false;
-    console.log("Error inicializando notificaciones:", e);
-  }
-
   $(document).ready(function() {
     $("#btn-refresh").on("click", function() {
+      //alert("Me distes click");
       cargarPedidos();
     });
   });
-
   $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); });
-
-  // Chequeo automático cada 1 minuto
-  setInterval(cargarPedidos, 60 * 1000);
 }, false);
 </script>
 
