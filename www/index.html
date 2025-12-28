@@ -194,7 +194,16 @@ function mostrarProductos(pedidoId) {
 
 function cerrarPedido(pedidoId) {
   const pedido = pedidosCache.find(p => p.id == pedidoId);
-  $("#lista-pedidos").html("<p>Error al cargar pedidos</p>");
+  $("#lista-productos").empty();
+  if (pedido && pedido.productos.length > 0) {
+    pedido.productos.forEach(row => {
+      $("#lista-productos").append(`<li>Pedido cerrado exitosamente</li>`);
+    });
+  } else {
+    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
+  }
+  $("#lista-productos").listview("refresh");
+  $("#popup-productos").popup("open");
 }
 
 document.addEventListener("deviceready", function() {
