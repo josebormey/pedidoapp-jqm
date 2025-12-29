@@ -228,14 +228,14 @@ function obtenerPedidoPorId(pedidoId, callback) {
     headers: { "Accept": "application/json" } 
   }, function(resp) {
     try {
-      let data;
-      // Si resp.data ya es objeto, úsalo directamente
-      if (typeof resp.data === "string") {
-        data = JSON.parse(resp.data);
-      } else {
-        data = resp.data;
+      let data = resp.data;
+
+      // Si viene como string, parsea
+      if (typeof data === "string") {
+        data = JSON.parse(data);
       }
 
+      // Ahora debería existir data.order
       if (data && data.order) {
         console.log("Pedido obtenido:", data.order);
         callback(null, data.order);
@@ -252,6 +252,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err || new Error("Error HTTP desconocido"), null);
   });
 }
+
 
 
 
