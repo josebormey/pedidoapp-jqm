@@ -207,28 +207,17 @@ function cerrarPedido(pedidoId) {
 
     cordova.plugin.http.sendRequest(url, {
       method: "put",
-      data: xmlData,
+      body: xmlData, // 👈 usar body en vez de data
       headers: {
         "Content-Type": "application/xml",
         "Accept": "application/json"
       }
     }, function(response) {
-      try {
-        console.log("Respuesta cerrarPedido:", response);
-        alert("Pedido #" + pedidoId + " cerrado exitosamente\nRespuesta: " + JSON.stringify(response));
-        cargarPedidos();
-      } catch (innerSuccessErr) {
-        alert("Error procesando respuesta: " + innerSuccessErr.message);
-        console.error(innerSuccessErr);
-      }
+      alert("Pedido #" + pedidoId + " cerrado exitosamente\nRespuesta: " + JSON.stringify(response));
+      cargarPedidos();
     }, function(error) {
-      try {
-        console.error("Error cerrando pedido:", error);
-        alert("Error al cerrar el pedido:\n" + JSON.stringify(error));
-      } catch (innerErrorErr) {
-        alert("Error mostrando el fallo: " + innerErrorErr.message);
-        console.error(innerErrorErr);
-      }
+      alert("Error al cerrar el pedido:\n" + JSON.stringify(error));
+      console.error(error);
     });
 
   } catch (outerErr) {
@@ -236,9 +225,6 @@ function cerrarPedido(pedidoId) {
     console.error(outerErr);
   }
 }
-
-
-
 
 document.addEventListener("deviceready", function() { // Evento cuando el dispositivo está listo
   // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
