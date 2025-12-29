@@ -207,7 +207,8 @@ function cerrarPedido(pedidoId) {
 
     cordova.plugin.http.sendRequest(url, {
       method: "put",
-      body: xmlData, // 👈 usar body en vez de data
+      data: xmlData,              // 👈 aquí va el string XML
+      serializer: "utf8",         // 👈 indicamos que es texto plano
       headers: {
         "Content-Type": "application/xml",
         "Accept": "application/json"
@@ -225,6 +226,7 @@ function cerrarPedido(pedidoId) {
     console.error(outerErr);
   }
 }
+
 
 document.addEventListener("deviceready", function() { // Evento cuando el dispositivo está listo
   // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
