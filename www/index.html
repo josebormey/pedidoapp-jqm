@@ -239,20 +239,16 @@ function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try {
-      console.log("Respuesta cruda del pedido:", resp.data); // 👀 imprime todo
-      alert("Respuesta cruda: " + resp.data.substring(0,200)); // 👀 muestra primeros 200 caracteres en pantalla
+      console.log("Respuesta cruda del pedido:", resp.data);
       const data = JSON.parse(resp.data);
 
-      // prueba todas las variantes
-      let pedido = null;
-      if (data.order) pedido = data.order;
-      else if (data.orders && Array.isArray(data.orders)) pedido = data.orders[0];
-      else if (data.orders && data.orders.order) pedido = data.orders.order;
+      // Tu API devuelve directamente { "order": { ... } }
+      const pedido = data.order;
 
       if (pedido) {
         callback(null, pedido);
       } else {
-        callback(new Error("Formato inesperado en respuesta"), null);
+        callback(new Error("No se encontró el objeto 'order' en la respuesta"), null);
       }
     } catch(e) {
       callback(e, null);
@@ -262,6 +258,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err, null);
   });
 }
+
 
 
 
