@@ -189,7 +189,7 @@ function mostrarProductos(pedidoId) { // Muestra productos de un pedido
   $("#lista-productos").listview("refresh"); // Refresca lista
   $("#popup-productos").popup("open"); // Abre popup
 }
-
+/*
 function cerrarPedido(pedidoId) { // Simula cierre de pedido
   const pedido = pedidosCache.find(p => p.id == pedidoId); // Busca pedido
   $("#lista-productos").empty(); // Limpia lista
@@ -202,7 +202,39 @@ function cerrarPedido(pedidoId) { // Simula cierre de pedido
   }
   $("#lista-productos").listview("refresh"); // Refresca lista
   $("#popup-productos").popup("open"); // Abre popup
+}*/
+
+function cerrarPedido(pedidoId) {
+  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`; // Endpoint del pedido
+
+  // XML para actualizar el estado del pedido a "Entregado" (id_state = 6)
+  const xmlData = `
+    <prestashop>
+      <order>
+        <id><![CDATA[${pedidoId}]]></id>
+        <current_state><![CDATA[6]]></current_state>
+      </order>
+    </prestashop>
+  `;
+
+  // Enviar la petición PUT al API de PrestaShop
+  cordova.plugin.http.sendRequest(url, {
+    method: "put",
+    data: xmlData,
+    headers: {
+      "Content-Type": "application/xml",
+      "Accept": "application/json"
+    }
+  }, function(response) {
+    console.log("Pedido cerrado:", response);
+    alert("Pedido #" + pedidoId + " cerrado exitosamente"); // Mensaje de éxito
+    cargarPedidos(); // Refrescar lista para que desaparezca de "Preparación en curso"
+  }, function(error) {
+    console.error("Error cerrando pedido:", error);
+    alert("Error al cerrar el pedido"); // Mensaje de error
+  });
 }
+
 
 document.addEventListener("deviceready", function() { // Evento cuando el dispositivo está listo
   // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
