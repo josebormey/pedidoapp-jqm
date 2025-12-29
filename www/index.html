@@ -192,20 +192,6 @@ function mostrarProductos(pedidoId) {
   $("#popup-productos").popup("open");
 }
 
-function cerrarPedido(pedidoId) {
-  const pedido = pedidosCache.find(p => p.id == pedidoId);
-  $("#lista-productos").empty();
-  if (pedido && pedido.productos.length > 0) {
-    pedido.productos.forEach(row => {
-      $("#lista-productos").append(`<li>Pedido cerrado exitosamente</li>`);
-    });
-  } else {
-    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
-  }
-  $("#lista-productos").listview("refresh");
-  $("#popup-productos").popup("open");
-}
-
 document.addEventListener("deviceready", function() {
   // Detectar y pedir permiso de notificaciones (sin romper si no existe el plugin)
   try {
@@ -234,44 +220,30 @@ document.addEventListener("deviceready", function() {
   // Chequeo automático cada 1 minuto
   setInterval(cargarPedidos, 60 * 1000);
 }, false);
-// NUEVA FUNCIÓN: obtener el pedido completo por ID desde el API de PrestaShop
+
 function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try {
-      console.log("Respuesta cruda del pedido:", resp.data);
       const data = JSON.parse(resp.data);
-
-      // Aquí está directamente el objeto
-      const pedido = data.order;
-
+      const pedido = data.order; // 👈 tu API devuelve esto
       if (pedido) {
         callback(null, pedido);
       } else {
         callback(new Error("No se encontró 'order' en la respuesta"), null);
       }
     } catch(e) {
-      console.error("Error parseando JSON:", e);
       callback(e, null);
     }
   }, function(err) {
-    console.error("Error HTTP al obtener pedido:", err);
     callback(err, null);
   });
 }
 
-
-
-
-
-// NUEVA FUNCIÓN: actualizar estado del pedido en PrestaShop (sin tocar tu cerrarPedido actual)
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
-  // nuevoEstado: por defecto 6 (Entregado). Si quieres Cancelado: 7.
-  const estadoFinal = typeof nuevoEstado === "number" ? nuevoEstado : 6;
-
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
     if (err || !pedido) {
-      alert("Error al obtener datos del pedido");
+      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
       return;
     }
 
@@ -286,7 +258,7 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
           <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
           <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
           <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
-          <current_state><![CDATA[${estadoFinal}]]></current_state>
+          <current_state><![CDATA[${nuevoEstado}]]></current_state>
         </order>
       </prestashop>
     `;
@@ -300,15 +272,14 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
         "Accept": "application/json"
       }
     }, function(response) {
-      alert("Pedido #" + pedidoId + " actualizado en PrestaShop");
-      // Opcional: refrescar la lista si quieres ver el cambio reflejado
-      try { cargarPedidos(); } catch(_) {}
+      alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
+      cargarPedidos();
     }, function(error) {
-      console.error("Error actualizando pedido en PrestaShop:", error);
-      alert("Error al actualizar el pedido en PrestaShop");
+      alert("Error al actualizar pedido: " + JSON.stringify(error));
     });
   });
 }
+
 </script>
 
 </body>
