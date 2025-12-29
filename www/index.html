@@ -239,18 +239,15 @@ function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try {
-      console.log("Respuesta cruda del pedido:", resp.data); // 👀 depuración
+      console.log("Respuesta cruda del pedido:", resp.data); // 👀 imprime todo
+      alert("Respuesta cruda: " + resp.data.substring(0,200)); // 👀 muestra primeros 200 caracteres en pantalla
       const data = JSON.parse(resp.data);
 
-      // Aceptar distintos formatos
+      // prueba todas las variantes
       let pedido = null;
-      if (data.order) {
-        pedido = data.order;
-      } else if (data.orders && Array.isArray(data.orders)) {
-        pedido = data.orders[0];
-      } else if (data.orders && data.orders.order) {
-        pedido = data.orders.order;
-      }
+      if (data.order) pedido = data.order;
+      else if (data.orders && Array.isArray(data.orders)) pedido = data.orders[0];
+      else if (data.orders && data.orders.order) pedido = data.orders.order;
 
       if (pedido) {
         callback(null, pedido);
@@ -265,6 +262,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err, null);
   });
 }
+
 
 
 // NUEVA FUNCIÓN: actualizar estado del pedido en PrestaShop (sin tocar tu cerrarPedido actual)
