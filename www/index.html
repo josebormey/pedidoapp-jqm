@@ -181,7 +181,13 @@ function obtenerPedidoPorId(pedidoId, callback) {
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try {
       const data = JSON.parse(resp.data);
-      callback(null, data.order);
+      // Aceptar tanto "order" como "orders"
+      const pedido = data.order || (data.orders && data.orders[0]);
+      if (pedido) {
+        callback(null, pedido);
+      } else {
+        callback(new Error("Formato inesperado en respuesta"), null);
+      }
     } catch(e) {
       callback(e, null);
     }
@@ -189,6 +195,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err, null);
   });
 }
+
 
 
 function mostrarProductos(pedidoId) { // Muestra productos de un pedido
