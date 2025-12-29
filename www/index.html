@@ -176,6 +176,21 @@ function cargarPedidos() { // Carga pedidos en la interfaz
   });
 }
 
+function obtenerPedidoPorId(pedidoId, callback) {
+  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
+    try {
+      const data = JSON.parse(resp.data);
+      callback(null, data.order);
+    } catch(e) {
+      callback(e, null);
+    }
+  }, function(err) {
+    callback(err, null);
+  });
+}
+
+
 function mostrarProductos(pedidoId) { // Muestra productos de un pedido
   const pedido = pedidosCache.find(p => p.id == pedidoId); // Busca pedido en caché
   $("#lista-productos").empty(); // Limpia lista
@@ -191,41 +206,46 @@ function mostrarProductos(pedidoId) { // Muestra productos de un pedido
 }
 
 function cerrarPedido(pedidoId) {
-  try {
-    console.log("cerrarPedido llamado con ID:", pedidoId);
-
-    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+  obtenerPedidoPorId(pedidoId, function(err, pedido) {
+    if (err || !pedido) {
+      alert("Error al obtener datos del pedido");
+      return;
+    }
 
     const xmlData = `
       <prestashop>
         <order>
-          <id><![CDATA[${pedidoId}]]></id>
+          <id><![CDATA[${pedido.id}]]></id>
+          <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
+          <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
+          <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
+          <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
+          <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
+          <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
+          <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
           <current_state><![CDATA[6]]></current_state>
         </order>
       </prestashop>
     `;
 
+    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
     cordova.plugin.http.sendRequest(url, {
       method: "put",
-      data: xmlData,              // 👈 aquí va el string XML
-      serializer: "utf8",         // 👈 indicamos que es texto plano
+      data: xmlData,
       headers: {
         "Content-Type": "application/xml",
         "Accept": "application/json"
       }
     }, function(response) {
-      alert("Pedido #" + pedidoId + " cerrado exitosamente\nRespuesta: " + JSON.stringify(response));
+      alert("Pedido #" + pedidoId + " cerrado exitosamente");
       cargarPedidos();
     }, function(error) {
-      alert("Error al cerrar el pedido:\n" + JSON.stringify(error));
-      console.error(error);
+      console.error("Error cerrando pedido:", error);
+      alert("Error al cerrar el pedido");
     });
-
-  } catch (outerErr) {
-    alert("Excepción capturada en cerrarPedido: " + outerErr.message);
-    console.error(outerErr);
-  }
+  });
 }
+
 
 
 document.addEventListener("deviceready", function() { // Evento cuando el dispositivo está listo
