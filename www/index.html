@@ -223,16 +223,23 @@ document.addEventListener("deviceready", function() {
 
 function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
+  cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(resp) {
     try {
-      const data = JSON.parse(resp.data);
-      if (data && data.order) {
-        callback(null, data.order); // 👈 éxito
+      let data;
+      if (typeof resp.data === "string") {
+        data = JSON.parse(resp.data);
       } else {
+        data = resp.data; // ya es objeto
+      }
+
+      if (data && data.order) {
+        callback(null, data.order);
+      } else {
+        console.log("Respuesta inesperada:", data);
         callback(new Error("No se encontró 'order' en la respuesta"), null);
       }
     } catch(e) {
-      console.error("Error parseando JSON:", e);
+      console.error("Error parseando respuesta:", e, resp.data);
       callback(e, null);
     }
   }, function(err) {
@@ -240,6 +247,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err || new Error("Error HTTP desconocido"), null);
   });
 }
+
 
 
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
