@@ -189,25 +189,13 @@ function mostrarProductos(pedidoId) { // Muestra productos de un pedido
   $("#lista-productos").listview("refresh"); // Refresca lista
   $("#popup-productos").popup("open"); // Abre popup
 }
-/*
-function cerrarPedido(pedidoId) { // Simula cierre de pedido
-  const pedido = pedidosCache.find(p => p.id == pedidoId); // Busca pedido
-  $("#lista-productos").empty(); // Limpia lista
-  if (pedido && pedido.productos.length > 0) {
-    pedido.productos.forEach(row => {
-      $("#lista-productos").append(`<li>Pedido cerrado exitosamente</li>`); // Mensaje de cierre
-    });
-  } else {
-    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>"); // Mensaje si no hay productos
-  }
-  $("#lista-productos").listview("refresh"); // Refresca lista
-  $("#popup-productos").popup("open"); // Abre popup
-}*/
+
 
 function cerrarPedido(pedidoId) {
-  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`; // Endpoint del pedido
+  console.log("cerrarPedido llamado con ID:", pedidoId);
 
-  // XML para actualizar el estado del pedido a "Entregado" (id_state = 6)
+  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+
   const xmlData = `
     <prestashop>
       <order>
@@ -217,7 +205,6 @@ function cerrarPedido(pedidoId) {
     </prestashop>
   `;
 
-  // Enviar la petición PUT al API de PrestaShop
   cordova.plugin.http.sendRequest(url, {
     method: "put",
     data: xmlData,
@@ -226,14 +213,15 @@ function cerrarPedido(pedidoId) {
       "Accept": "application/json"
     }
   }, function(response) {
-    console.log("Pedido cerrado:", response);
-    alert("Pedido #" + pedidoId + " cerrado exitosamente"); // Mensaje de éxito
-    cargarPedidos(); // Refrescar lista para que desaparezca de "Preparación en curso"
+    console.log("Respuesta cerrarPedido:", response);
+    alert("Pedido #" + pedidoId + " cerrado exitosamente");
+    cargarPedidos();
   }, function(error) {
     console.error("Error cerrando pedido:", error);
-    alert("Error al cerrar el pedido"); // Mensaje de error
+    alert("Error al cerrar el pedido: " + JSON.stringify(error));
   });
 }
+
 
 
 document.addEventListener("deviceready", function() { // Evento cuando el dispositivo está listo
