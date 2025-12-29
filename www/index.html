@@ -190,37 +190,53 @@ function mostrarProductos(pedidoId) { // Muestra productos de un pedido
   $("#popup-productos").popup("open"); // Abre popup
 }
 
-
 function cerrarPedido(pedidoId) {
-  console.log("cerrarPedido llamado con ID:", pedidoId);
+  try {
+    console.log("cerrarPedido llamado con ID:", pedidoId);
 
-  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
 
-  const xmlData = `
-    <prestashop>
-      <order>
-        <id><![CDATA[${pedidoId}]]></id>
-        <current_state><![CDATA[6]]></current_state>
-      </order>
-    </prestashop>
-  `;
+    const xmlData = `
+      <prestashop>
+        <order>
+          <id><![CDATA[${pedidoId}]]></id>
+          <current_state><![CDATA[6]]></current_state>
+        </order>
+      </prestashop>
+    `;
 
-  cordova.plugin.http.sendRequest(url, {
-    method: "put",
-    data: xmlData,
-    headers: {
-      "Content-Type": "application/xml",
-      "Accept": "application/json"
-    }
-  }, function(response) {
-    console.log("Respuesta cerrarPedido:", response);
-    alert("Pedido #" + pedidoId + " cerrado exitosamente");
-    cargarPedidos();
-  }, function(error) {
-    console.error("Error cerrando pedido:", error);
-    alert("Error al cerrar el pedido: " + JSON.stringify(error));
-  });
+    cordova.plugin.http.sendRequest(url, {
+      method: "put",
+      data: xmlData,
+      headers: {
+        "Content-Type": "application/xml",
+        "Accept": "application/json"
+      }
+    }, function(response) {
+      try {
+        console.log("Respuesta cerrarPedido:", response);
+        alert("Pedido #" + pedidoId + " cerrado exitosamente\nRespuesta: " + JSON.stringify(response));
+        cargarPedidos();
+      } catch (innerSuccessErr) {
+        alert("Error procesando respuesta: " + innerSuccessErr.message);
+        console.error(innerSuccessErr);
+      }
+    }, function(error) {
+      try {
+        console.error("Error cerrando pedido:", error);
+        alert("Error al cerrar el pedido:\n" + JSON.stringify(error));
+      } catch (innerErrorErr) {
+        alert("Error mostrando el fallo: " + innerErrorErr.message);
+        console.error(innerErrorErr);
+      }
+    });
+
+  } catch (outerErr) {
+    alert("Excepción capturada en cerrarPedido: " + outerErr.message);
+    console.error(outerErr);
+  }
 }
+
 
 
 
