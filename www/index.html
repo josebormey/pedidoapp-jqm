@@ -242,15 +242,16 @@ function obtenerPedidoPorId(pedidoId, callback) {
       console.log("Respuesta cruda del pedido:", resp.data);
       const data = JSON.parse(resp.data);
 
-      // Tu API devuelve directamente { "order": { ... } }
+      // Aquí está directamente el objeto
       const pedido = data.order;
 
       if (pedido) {
         callback(null, pedido);
       } else {
-        callback(new Error("No se encontró el objeto 'order' en la respuesta"), null);
+        callback(new Error("No se encontró 'order' en la respuesta"), null);
       }
     } catch(e) {
+      console.error("Error parseando JSON:", e);
       callback(e, null);
     }
   }, function(err) {
@@ -258,6 +259,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err, null);
   });
 }
+
 
 
 
