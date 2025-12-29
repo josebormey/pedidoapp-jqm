@@ -226,19 +226,21 @@ function obtenerPedidoPorId(pedidoId, callback) {
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try {
       const data = JSON.parse(resp.data);
-      const pedido = data.order; // 👈 tu API devuelve esto
-      if (pedido) {
-        callback(null, pedido);
+      if (data && data.order) {
+        callback(null, data.order); // 👈 éxito
       } else {
         callback(new Error("No se encontró 'order' en la respuesta"), null);
       }
     } catch(e) {
+      console.error("Error parseando JSON:", e);
       callback(e, null);
     }
   }, function(err) {
-    callback(err, null);
+    console.error("Error HTTP al obtener pedido:", err);
+    callback(err || new Error("Error HTTP desconocido"), null);
   });
 }
+
 
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
