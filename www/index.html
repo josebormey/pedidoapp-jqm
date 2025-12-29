@@ -223,16 +223,21 @@ document.addEventListener("deviceready", function() {
 
 function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(resp) {
+  cordova.plugin.http.sendRequest(url, { 
+    method: "get", 
+    headers: { "Accept": "application/json" } 
+  }, function(resp) {
     try {
       let data;
+      // Si resp.data ya es objeto, úsalo directamente
       if (typeof resp.data === "string") {
         data = JSON.parse(resp.data);
       } else {
-        data = resp.data; // ya es objeto
+        data = resp.data;
       }
 
       if (data && data.order) {
+        console.log("Pedido obtenido:", data.order);
         callback(null, data.order);
       } else {
         console.log("Respuesta inesperada:", data);
@@ -247,6 +252,7 @@ function obtenerPedidoPorId(pedidoId, callback) {
     callback(err || new Error("Error HTTP desconocido"), null);
   });
 }
+
 
 
 
