@@ -145,6 +145,8 @@ function notificarNuevosPedidos(pedidos) {
   });
 }
 
+let pedidosListos = false;
+
 function cargarPedidos() {
   $("#lista-pedidos").html("<p>Cargando...</p>");
   procesarPedidos(CARRIER_ID, function(err, pedidos) {
@@ -154,9 +156,9 @@ function cargarPedidos() {
     if (pedidos.length === 0) {
       $("#lista-pedidos").html("<p>No existen pedidos en 'Preparacion en curso'</p>");
     } else {
-      // Notificar nuevos antes de actualizar la caché
       notificarNuevosPedidos(pedidos);
       pedidosCache = pedidos;
+      pedidosListos = true; // ✅ marcar que ya están listos
 
       pedidos.forEach(p => {
         $("#lista-pedidos").append(
@@ -168,13 +170,15 @@ function cargarPedidos() {
              <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-             <a href="#" data-id="${p.id}" onclick="cerrarPedidoPrestashop(this.dataset.id,5)"class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
+             <a href="#" data-id="${p.id}" onclick="cerrarPedidoPrestashop(this.dataset.id,5)"
+                class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
            </div>`
         );
       });
     }
   });
 }
+
 
 function mostrarProductos(pedidoId) {
   const pedido = pedidosCache.find(p => p.id == pedidoId);
@@ -234,6 +238,10 @@ function obtenerPedidoPorId(pedidoId, callback) {
 
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 
+  if (!pedidosListos) { 
+    alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos."); 
+  return; }
+  
   // 👇 Aquí usamos la API para obtener el pedido completo
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
     if (err || !pedido) {
