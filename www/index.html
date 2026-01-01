@@ -237,50 +237,93 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 
   // 👇 Aquí usamos la API para obtener el pedido completo
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
-    if (err || !pedido) {
-      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
-      alert("El error es: "+ err + "y el pedido es:" + pedido);
-      return;
-    }
+  if (err || !pedido) {
+    alert("Error al obtener datos del pedido: " + JSON.stringify(err));
+    alert("El error es: " + err + " y el pedido es: " + pedido);
+    return;
+  }
 
-    alert("El teléfono es: " + pedido.id_address_delivery); // ejemplo de campo real
+  alert("El teléfono es: " + pedido.id_address_delivery); // ejemplo de campo real
 
-    const xmlData = `
-      <prestashop>
-        <order>
-          <id><![CDATA[${pedido.id}]]></id>
-          <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
-          <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
-          <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
-          <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
-          <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
-          <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
-          <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
-          <current_state><![CDATA[${nuevoEstado}]]></current_state>
-          <!-- ⚠️ Añade aquí todos los demás campos que devuelve el GET -->
-        </order>
-      </prestashop>
-    `;
+  // ⚠️ Validación del campo 'module'
+  if (!pedido.module || typeof pedido.module !== "string" || pedido.module.trim() === "") {
+    alert("Error: el campo 'module' está vacío o inválido. No se puede actualizar el pedido.");
+    return;
+  }
 
-    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-    cordova.plugin.http.setDataSerializer("utf8");
+  const xmlData = `
+<prestashop>
+  <order>
+    <id><![CDATA[${pedido.id}]]></id>
+    <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
+    <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
+    <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
+    <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
+    <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
+    <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
+    <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
+    <current_state><![CDATA[${nuevoEstado}]]></current_state>
+    <module><![CDATA[${pedido.module}]]></module>
+    <invoice_number><![CDATA[${pedido.invoice_number}]]></invoice_number>
+    <invoice_date><![CDATA[${pedido.invoice_date}]]></invoice_date>
+    <delivery_number><![CDATA[${pedido.delivery_number}]]></delivery_number>
+    <delivery_date><![CDATA[${pedido.delivery_date}]]></delivery_date>
+    <valid><![CDATA[${pedido.valid}]]></valid>
+    <date_add><![CDATA[${pedido.date_add}]]></date_add>
+    <date_upd><![CDATA[${pedido.date_upd}]]></date_upd>
+    <id_shop_group><![CDATA[${pedido.id_shop_group}]]></id_shop_group>
+    <id_shop><![CDATA[${pedido.id_shop}]]></id_shop>
+    <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
+    <payment><![CDATA[${pedido.payment}]]></payment>
+    <recyclable><![CDATA[${pedido.recyclable}]]></recyclable>
+    <gift><![CDATA[${pedido.gift}]]></gift>
+    <gift_message><![CDATA[${pedido.gift_message}]]></gift_message>
+    <total_discounts><![CDATA[${pedido.total_discounts}]]></total_discounts>
+    <total_discounts_tax_incl><![CDATA[${pedido.total_discounts_tax_incl}]]></total_discounts_tax_incl>
+    <total_discounts_tax_excl><![CDATA[${pedido.total_discounts_tax_excl}]]></total_discounts_tax_excl>
+    <total_paid><![CDATA[${pedido.total_paid}]]></total_paid>
+    <total_paid_tax_incl><![CDATA[${pedido.total_paid_tax_incl}]]></total_paid_tax_incl>
+    <total_paid_tax_excl><![CDATA[${pedido.total_paid_tax_excl}]]></total_paid_tax_excl>
+    <total_paid_real><![CDATA[${pedido.total_paid_real}]]></total_paid_real>
+    <total_products><![CDATA[${pedido.total_products}]]></total_products>
+    <total_products_wt><![CDATA[${pedido.total_products_wt}]]></total_products_wt>
+    <total_shipping><![CDATA[${pedido.total_shipping}]]></total_shipping>
+    <total_shipping_tax_incl><![CDATA[${pedido.total_shipping_tax_incl}]]></total_shipping_tax_incl>
+    <total_shipping_tax_excl><![CDATA[${pedido.total_shipping_tax_excl}]]></total_shipping_tax_excl>
+    <carrier_tax_rate><![CDATA[${pedido.carrier_tax_rate}]]></carrier_tax_rate>
+    <total_wrapping><![CDATA[${pedido.total_wrapping}]]></total_wrapping>
+    <total_wrapping_tax_incl><![CDATA[${pedido.total_wrapping_tax_incl}]]></total_wrapping_tax_incl>
+    <total_wrapping_tax_excl><![CDATA[${pedido.total_wrapping_tax_excl}]]></total_wrapping_tax_excl>
+    <round_mode><![CDATA[${pedido.round_mode}]]></round_mode>
+    <round_type><![CDATA[${pedido.round_type}]]></round_type>
+    <conversion_rate><![CDATA[${pedido.conversion_rate}]]></conversion_rate>
+    <reference><![CDATA[${pedido.reference}]]></reference>
+  </order>
+</prestashop>
+`;
 
-    cordova.plugin.http.sendRequest(url, {
+  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+  cordova.plugin.http.setDataSerializer("utf8");
+
+  cordova.plugin.http.sendRequest(
+    url,
+    {
       method: "put",
       data: xmlData,
       headers: {
         "Content-Type": "application/xml",
         "Accept": "application/json"
       }
-    }, function(response) {
+    },
+    function(response) {
       alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
       cargarPedidos();
-    }, function(error) {
+    },
+    function(error) {
       alert("Error al actualizar pedido:\n" + JSON.stringify(error));
-    });
-  });
-}
-
+    }
+  );
+});
 
 
 // -----------MANEJADORES DE EVENTOS----------------
