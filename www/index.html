@@ -264,6 +264,8 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
     }
     
     const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
+    const gift = pedido.gift === true || pedido.gift === "1" ? "1" : "0";
+
     const xmlData = `
 <prestashop>
   <order>
@@ -289,7 +291,7 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
     <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
     <payment><![CDATA[${pedido.payment}]]></payment>
     <recyclable><![CDATA[${reciclable}]]></recyclable>
-    <gift><![CDATA[${pedido.gift}]]></gift>
+    <gift><![CDATA[${gift}]]></gift>
     <gift_message><![CDATA[${pedido.gift_message}]]></gift_message>
     <total_discounts><![CDATA[${pedido.total_discounts}]]></total_discounts>
     <total_discounts_tax_incl><![CDATA[${pedido.total_discounts_tax_incl}]]></total_discounts_tax_incl>
