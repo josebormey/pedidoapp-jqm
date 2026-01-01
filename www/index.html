@@ -233,7 +233,6 @@ function obtenerPedidoPorId(pedidoId, callback) {
 
 
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
-  alert("El pedido tiene el id: " + pedidoId);
 
   // 👇 Aquí usamos la API para obtener el pedido completo
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
@@ -242,8 +241,6 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
       alert("El error es: " + err + " y el pedido es: " + pedido);
       return;
     }
-
-    alert("El teléfono es: " + pedido.id_address_delivery); // ejemplo de campo real
 
     // ⚠️ Validación de campos críticos
     if (!pedido.module || pedido.module.trim() === "") {
@@ -331,7 +328,7 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
         }
       },
       function(response) {
-        alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
+        alert("Pedido #" + pedidoId + " actualizado a estado Entregado " );
         cargarPedidos();
       },
       function(error) {
