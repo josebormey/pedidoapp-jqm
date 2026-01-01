@@ -168,8 +168,7 @@ function cargarPedidos() {
              <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-             <a href="#" onclick="cerrarPedidoPrestashop(${p},6)"
-                class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
+             <a href="#" data-id="${p.id}" onclick="cerrarPedidoPrestashop(this.dataset.id,6)"class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
            </div>`
         );
       });
@@ -227,8 +226,10 @@ function obtenerPedidoPorId(pedidoId, callback) {
   });
 }
 
-function cerrarPedidoPrestashop(pedido, nuevoEstado) {
-  alert("El pedido tiene el id: " + pedido.id);
+function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
+  alert("El pedido tiene el id: " + pedidoId);
+  const pedido = pedidosCache.find(p => p.id == pedidoId);
+  alert("El telefono es: " + pedido.telefono);
   /*obtenerPedidoPorId(pedidoId, function(err, pedido) {
     if (err || !pedido) {
       alert("Error al obtener datos del pedido: " + JSON.stringify(err));
