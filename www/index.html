@@ -229,41 +229,46 @@ function obtenerPedidoPorId(pedidoId, callback) {
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   alert("El pedido tiene el id: " + pedidoId);
   const pedido = pedidosCache.find(p => p.id == pedidoId);
-  alert("El telefono es: " + pedido.telefono);
-  obtenerPedidoPorId(pedidoId, function(err, pedido) {
+  alert("El teléfono es: " + pedido.telefono);
 
-    const xmlData = `
-      <prestashop>
-        <order>
-          <id><![CDATA[${pedido.id}]]></id>
-          <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
-          <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
-          <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
-          <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
-          <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
-          <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
-          <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
-          <current_state><![CDATA[${nuevoEstado}]]></current_state>
-        </order>
-      </prestashop>
-    `;
+  const xmlData = `
+    <prestashop>
+      <order>
+        <id><![CDATA[${pedido.id}]]></id>
+        <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
+        <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
+        <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
+        <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
+        <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
+        <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
+        <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
+        <current_state><![CDATA[${nuevoEstado}]]></current_state>
+      </order>
+    </prestashop>
+  `;
 
-    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-    cordova.plugin.http.sendRequest(url, {
+  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+
+  cordova.plugin.http.sendRequest(
+    url,
+    {
       method: "put",
       data: xmlData,
       headers: {
         "Content-Type": "application/xml",
         "Accept": "application/json"
       }
-    }, function(response) {
+    },
+    function(response) {
       alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
       cargarPedidos();
-    }, function(error) {
+    },
+    function(error) {
       alert("Error al actualizar pedido: " + JSON.stringify(error));
-    });
-  });
-}
+    }
+  ); // 👈 aquí cerramos correctamente la llamada
+} // 👈 aquí cerramos la función
+
 
 
 // -----------MANEJADORES DE EVENTOS----------------
