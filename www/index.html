@@ -168,7 +168,7 @@ function cargarPedidos() {
              <p><strong>Total:</strong> ${p.total}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-             <a href="#" data-id="${p.id}" onclick="cerrarPedidoPrestashop(this.dataset.id,6)"class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
+             <a href="#" data-id="${p.id}" onclick="cerrarPedidoPrestashop(this.dataset.id,5)"class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
            </div>`
         );
       });
@@ -262,7 +262,8 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
       alert("Error: faltan campos de tienda (id_shop o id_shop_group).");
       return;
     }
-
+    
+    const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
     const xmlData = `
 <prestashop>
   <order>
@@ -287,7 +288,7 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
     <id_shop><![CDATA[${pedido.id_shop}]]></id_shop>
     <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
     <payment><![CDATA[${pedido.payment}]]></payment>
-    <recyclable><![CDATA[${pedido.recyclable}]]></recyclable>
+    <recyclable><![CDATA[${reciclable}]]></recyclable>
     <gift><![CDATA[${pedido.gift}]]></gift>
     <gift_message><![CDATA[${pedido.gift_message}]]></gift_message>
     <total_discounts><![CDATA[${pedido.total_discounts}]]></total_discounts>
