@@ -241,7 +241,7 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   if (!pedidosListos) { 
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos."); 
   return; }
-  
+
   // 👇 Aquí usamos la API para obtener el pedido completo
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
     if (err || !pedido) {
@@ -340,7 +340,8 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
         cargarPedidos();
       },
       function(error) {
-        alert("Error al actualizar pedido:\n" + JSON.stringify(error));
+        //alert("Error al cerrar pedido:\n" + JSON.stringify(error));
+        alert("Error al cerrar pedido:\n" + "Por favor intentelo de nuevo");
       }
     );
   });
