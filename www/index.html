@@ -193,44 +193,56 @@ function mostrarProductos(pedidoId) {
 function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
 
-  cordova.plugin.http.sendRequest(url, { 
-    method: "get", 
-    headers: { "Accept": "application/json" } 
-  }, function(resp) {
-    console.log("Tipo de resp.data:", typeof resp.data);
-    console.log("Contenido de resp.data:", resp.data);
+  // 👇 Configuramos el serializador para que acepte JSON
+  cordova.plugin.http.setDataSerializer("json");
 
-    try {
-      let data = resp.data;
+  cordova.plugin.http.sendRequest(
+    url,
+    {
+      method: "get",
+      headers: { "Accept": "application/json" }
+    },
+    function(resp) {
+      try {
+        let data = resp.data;
 
-      // Si viene como string, parsea
-      if (typeof data === "string") {
-        data = JSON.parse(data);
+        // Si viene como string, parseamos
+        if (typeof data === "string") {
+          data = JSON.parse(data);
+        }
+
+        // PrestaShop devuelve { order: { ... } }
+        if (data && data.order) {
+          console.log("Pedido obtenido correctamente:", data.order);
+          callback(null, data.order);
+        } else {
+          console.log("Respuesta inesperada:", data);
+          callback(new Error("No se encontró 'order' en la respuesta"), null);
+        }
+      } catch (e) {
+        console.error("Error parseando respuesta:", e, resp.data);
+        callback(e, null);
       }
-
-      // Ahora debería existir data.order
-      if (data && data.order) {
-        console.log("Pedido obtenido correctamente:", data.order);
-        callback(null, data.order);
-      } else {
-        console.log("Respuesta inesperada:", data);
-        callback(new Error("No se encontró 'order' en la respuesta"), null);
-      }
-    } catch(e) {
-      console.error("Error parseando respuesta:", e, resp.data);
-      callback(e, null);
+    },
+    function(err) {
+      console.error("Error HTTP al obtener pedido:", err);
+      callback(err || new Error("Error HTTP desconocido"), null);
     }
-  }, function(err) {
-    console.error("Error HTTP al obtener pedido:", err);
-    callback(err || new Error("Error HTTP desconocido"), null);
-  });
+  );
 }
 
+
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
-  try {
-    alert("El pedido tiene el id: " + pedidoId);
-    const pedido = pedidosCache.find(p => p.id == pedidoId);
-    alert("El teléfono es: " + pedido.telefono);
+  alert("El pedido tiene el id: " + pedidoId);
+
+  // 👇 Aquí usamos la API para obtener el pedido completo
+  obtenerPedidoPorId(pedidoId, function(err, pedido) {
+    if (err || !pedido) {
+      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
+      return;
+    }
+
+    alert("El teléfono es: " + pedido.id_address_delivery); // ejemplo de campo real
 
     const xmlData = `
       <prestashop>
@@ -244,41 +256,30 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
           <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
           <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
           <current_state><![CDATA[${nuevoEstado}]]></current_state>
+          <!-- ⚠️ Añade aquí todos los demás campos que devuelve el GET -->
         </order>
       </prestashop>
     `;
 
     const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-
-    // 👇 Configuramos el serializador para aceptar strings en UTF-8
     cordova.plugin.http.setDataSerializer("utf8");
 
-    cordova.plugin.http.sendRequest(
-      url,
-      {
-        method: "put",
-        data: xmlData, // ahora sí puede ser string
-        headers: {
-          "Content-Type": "application/xml",
-          "Accept": "application/json"
-        }
-      },
-      function(response) {
-        alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado +
-              "\nRespuesta: " + JSON.stringify(response));
-        cargarPedidos();
-      },
-      function(error) {
-        alert("Error al actualizar pedido:\n" + JSON.stringify(error));
-        console.error("Error en PUT:", error);
+    cordova.plugin.http.sendRequest(url, {
+      method: "put",
+      data: xmlData,
+      headers: {
+        "Content-Type": "application/xml",
+        "Accept": "application/json"
       }
-    );
-
-  } catch (e) {
-    alert("Excepción capturada en cerrarPedidoPrestashop: " + e.message);
-    console.error("Excepción:", e);
-  }
+    }, function(response) {
+      alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
+      cargarPedidos();
+    }, function(error) {
+      alert("Error al actualizar pedido:\n" + JSON.stringify(error));
+    });
+  });
 }
+
 
 
 // -----------MANEJADORES DE EVENTOS----------------
