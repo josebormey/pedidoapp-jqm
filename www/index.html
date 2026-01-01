@@ -237,21 +237,33 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 
   // 👇 Aquí usamos la API para obtener el pedido completo
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
-  if (err || !pedido) {
-    alert("Error al obtener datos del pedido: " + JSON.stringify(err));
-    alert("El error es: " + err + " y el pedido es: " + pedido);
-    return;
-  }
+    if (err || !pedido) {
+      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
+      alert("El error es: " + err + " y el pedido es: " + pedido);
+      return;
+    }
 
-  alert("El teléfono es: " + pedido.id_address_delivery); // ejemplo de campo real
+    alert("El teléfono es: " + pedido.id_address_delivery); // ejemplo de campo real
 
-  // ⚠️ Validación del campo 'module'
-  if (!pedido.module || typeof pedido.module !== "string" || pedido.module.trim() === "") {
-    alert("Error: el campo 'module' está vacío o inválido. No se puede actualizar el pedido.");
-    return;
-  }
+    // ⚠️ Validación de campos críticos
+    if (!pedido.module || pedido.module.trim() === "") {
+      alert("Error: el campo 'module' está vacío. No se puede actualizar el pedido.");
+      return;
+    }
+    if (!pedido.payment || pedido.payment.trim() === "") {
+      alert("Error: el campo 'payment' está vacío. No se puede actualizar el pedido.");
+      return;
+    }
+    if (!pedido.secure_key || pedido.secure_key.trim() === "") {
+      alert("Error: el campo 'secure_key' está vacío. No se puede actualizar el pedido.");
+      return;
+    }
+    if (!pedido.id_shop || !pedido.id_shop_group) {
+      alert("Error: faltan campos de tienda (id_shop o id_shop_group).");
+      return;
+    }
 
-  const xmlData = `
+    const xmlData = `
 <prestashop>
   <order>
     <id><![CDATA[${pedido.id}]]></id>
@@ -302,28 +314,29 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 </prestashop>
 `;
 
-  const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.setDataSerializer("utf8");
+    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+    cordova.plugin.http.setDataSerializer("utf8");
 
-  cordova.plugin.http.sendRequest(
-    url,
-    {
-      method: "put",
-      data: xmlData,
-      headers: {
-        "Content-Type": "application/xml",
-        "Accept": "application/json"
+    cordova.plugin.http.sendRequest(
+      url,
+      {
+        method: "put",
+        data: xmlData,
+        headers: {
+          "Content-Type": "application/xml",
+          "Accept": "application/json"
+        }
+      },
+      function(response) {
+        alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
+        cargarPedidos();
+      },
+      function(error) {
+        alert("Error al actualizar pedido:\n" + JSON.stringify(error));
       }
-    },
-    function(response) {
-      alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
-      cargarPedidos();
-    },
-    function(error) {
-      alert("Error al actualizar pedido:\n" + JSON.stringify(error));
-    }
-  );
-});
+    );
+  });
+}
 
 
 // -----------MANEJADORES DE EVENTOS----------------
