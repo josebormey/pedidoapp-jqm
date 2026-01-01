@@ -249,27 +249,30 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
 
-  cordova.plugin.http.sendRequest(
-    url,
-    {
-      method: "put",
-      data: xmlData,
-      headers: {
-        "Content-Type": "application/xml",
-        "Accept": "application/json"
+  try {
+    cordova.plugin.http.sendRequest(
+      url,
+      {
+        method: "put",
+        data: xmlData,
+        headers: {
+          "Content-Type": "application/xml",
+          "Accept": "application/json"
+        }
+      },
+      function(response) {
+        alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
+        cargarPedidos();
+      },
+      function(error) {
+        alert("Error al actualizar pedido: " + JSON.stringify(error));
       }
-    },
-    function(response) {
-      alert("Pedido #" + pedidoId + " actualizado a estado " + nuevoEstado);
-      cargarPedidos();
-    },
-    function(error) {
-      alert("Error al actualizar pedido: " + JSON.stringify(error));
-    }
-  ); // 👈 aquí cerramos correctamente la llamada
-} // 👈 aquí cerramos la función
-
-
+    );
+  } catch (e) {
+    alert("Excepción capturada en PUT: " + e.message);
+    console.error("Excepción en cerrarPedidoPrestashop:", e);
+  }
+}
 
 // -----------MANEJADORES DE EVENTOS----------------
 document.addEventListener("deviceready", function() {
