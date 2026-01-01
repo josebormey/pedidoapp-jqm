@@ -63,7 +63,8 @@ const ESTADOS_PEDIDO = {
   4: "Enviado",
   5: "Listo para entregar",
   6: "Entregado",
-  7: "Cancelado"
+  7: "Cancelado",
+  8: "En espera de validacion por contra reembolso"
 };
 
 function claseEstado(estado) {
@@ -107,7 +108,7 @@ function obtenerPedidosCompletos(idCarrier, callback) {
 function procesarPedidos(idCarrier, callback) {
   obtenerPedidosCompletos(idCarrier, function(err, pedidos) {
     if (err) { callback(err, []); return; }
-    const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "Preparacion en curso");
+    const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "En espera de validacion por contra reembolso");
     let enriquecidos = [], pendientes = filtrados.length;
     if (pendientes === 0) { callback(null, []); return; }
 
