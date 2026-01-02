@@ -4,7 +4,7 @@
 let firmaCanvas, ctx, dibujando = false;
 let firmaDataURL = null;
 let pedidoEnFirma = null;
-/*
+
 // Inicializa el canvas de firma
 function inicializarFirma() {
   firmaCanvas = document.getElementById("canvas-firma");
@@ -80,12 +80,12 @@ $("#btn-guardar-firma").on("click", function() {
     cerrarPedidoPrestashop(pedidoEnFirma, 5); // usa tu función de cierre
     pedidoEnFirma = null;
   }
-}); */
+}); 
 
 // Abre popup de firma y guarda el id del pedido
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
     alert('Firma inicializada' + pedidoId + nuevoEstado);
-  /*if (!pedidosListos) {
+  if (!pedidosListos) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
   }
@@ -97,5 +97,5 @@ function iniciarCierreConFirma(pedidoId, nuevoEstado) {
     //inicializarFirma();
   } else {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
-  }*/
+  }
 }
