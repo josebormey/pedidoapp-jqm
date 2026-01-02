@@ -1,10 +1,10 @@
 // -------- Manejo de firma del cliente --------
-/*
+
 // Variables de estado
 let firmaCanvas, ctx, dibujando = false;
 let firmaDataURL = null;
 let pedidoEnFirma = null;
-
+/*
 // Inicializa el canvas de firma
 function inicializarFirma() {
   firmaCanvas = document.getElementById("canvas-firma");
@@ -85,15 +85,16 @@ $("#btn-guardar-firma").on("click", function() {
 // Abre popup de firma y guarda el id del pedido
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
     alert('Firma inicializada');
-  /*if (!pedidosListos) {
+  if (!pedidosListos) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
   }
   if (firmaObligatoria) {
     pedidoEnFirma = pedidoId;
     $("#popup-firma").popup("open");
-    inicializarFirma();
+    
+    //inicializarFirma();
   } else {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
-  }*/
+  }
 }
