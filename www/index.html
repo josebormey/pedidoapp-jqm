@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -6,7 +5,7 @@
   <title>PedidoApp JQM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Política de seguridad para Cordova -->
+  <!-- Política de seguridad -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src * 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval';
                  style-src * 'self' 'unsafe-inline';
@@ -18,8 +17,14 @@
   <script src="js/jquery-1.11.1.min.js"></script>
   <script src="js/jquery.mobile-1.4.5.min.js"></script>
 
-  <!-- Cordova -->
-  <script src="cordova.js"></script>
+  <!-- Cordova (solo en móvil) -->
+  <script>
+    if (location.protocol === "file:") {
+      document.write('<script src="cordova.js"><\/script>');
+    } else {
+      console.log("Modo navegador: cordova.js no cargado");
+    }
+  </script>
 
   <!-- Estilos -->
   <link rel="stylesheet" href="css/app.css">
@@ -40,13 +45,13 @@
     <div id="lista-pedidos"></div>
   </div>
 
-  <!-- Popup para productos -->
+  <!-- Popup productos -->
   <div data-role="popup" id="popup-productos" class="ui-content" style="max-width:400px;">
     <h3>Productos del pedido</h3>
     <ul data-role="listview" id="lista-productos"></ul>
   </div>
 
-  <!-- Popup para firma -->
+  <!-- Popup firma -->
   <div data-role="popup" id="popup-firma" class="ui-content" style="max-width:420px;">
     <h3>Firma del cliente</h3>
     <canvas id="canvas-firma" width="380" height="200"></canvas>
@@ -54,12 +59,10 @@
     <a href="#" id="btn-guardar-firma" class="ui-btn ui-mini ui-btn-b">Guardar firma</a>
   </div>
 </div>
+
+<!-- Scripts -->
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/firma.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
-
-
-

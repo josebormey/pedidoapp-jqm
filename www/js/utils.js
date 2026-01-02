@@ -1,5 +1,4 @@
-
-// Funcion de formato moneda
+// -------- Formato de moneda --------
 function formatoMoneda(valor) {
   return parseFloat(valor).toLocaleString("es-ES", {
     minimumFractionDigits: 2,
@@ -7,8 +6,9 @@ function formatoMoneda(valor) {
   }) + " MN";
 }
 
-// Funciones auxiliares para cliente y dirección
+// -------- Funciones auxiliares --------
 function obtenerCliente(idCliente, callback) {
+  if (!ES_CORDOVA) { callback(null, { firstname:"Fake", lastname:"Cliente"}); return; }
   const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
@@ -17,6 +17,7 @@ function obtenerCliente(idCliente, callback) {
 }
 
 function obtenerDireccion(idDireccion, callback) {
+  if (!ES_CORDOVA) { callback(null, { address1:"Fake", city:"Habana"}); return; }
   const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
     try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
@@ -25,6 +26,7 @@ function obtenerDireccion(idDireccion, callback) {
 }
 
 function obtenerPedidosCompletos(idCarrier, callback) {
+  if (!ES_CORDOVA) { callback(null, PEDIDOS_FAKE); return; }
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
   cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
     try { const data = JSON.parse(response.data); callback(null, data.orders || []); }
@@ -33,6 +35,7 @@ function obtenerPedidosCompletos(idCarrier, callback) {
 }
 
 function procesarPedidos(idCarrier, callback) {
+  if (!ES_CORDOVA) { callback(null, PEDIDOS_FAKE); return; }
   obtenerPedidosCompletos(idCarrier, function(err, pedidos) {
     if (err) { callback(err, []); return; }
     const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "En espera de validacion por contra reembolso");
@@ -59,9 +62,9 @@ function procesarPedidos(idCarrier, callback) {
   });
 }
 
-// Notificación de nuevos pedidos (solo si el plugin está disponible)
+// -------- Notificación de nuevos pedidos --------
 function notificarNuevosPedidos(pedidos) {
-  if (!notificacionesDisponibles) return;
+  if (!ES_CORDOVA || !notificacionesDisponibles) return;
   pedidos.forEach(p => {
     if (!pedidosCache.find(pc => pc.id == p.id)) {
       cordova.plugins.notification.local.schedule({
@@ -73,8 +76,9 @@ function notificarNuevosPedidos(pedidos) {
   });
 }
 
-let pedidosListosFlag = false;
+//let pedidosListosFlag = false;
 
+// -------- Cargar pedidos --------
 function cargarPedidos() {
   $("#lista-pedidos").html("<p>Cargando...</p>");
   procesarPedidos(CARRIER_ID, function(err, pedidos) {
@@ -107,6 +111,8 @@ function cargarPedidos() {
     }
   });
 }
+
+// -------- Mostrar productos --------
 function mostrarProductos(pedidoId) {
   const pedido = pedidosCache.find(p => p.id == pedidoId);
   $("#lista-productos").empty();
@@ -123,7 +129,13 @@ function mostrarProductos(pedidoId) {
   $("#popup-productos").popup("open");
 }
 
+// -------- Obtener pedido por ID --------
 function obtenerPedidoPorId(pedidoId, callback) {
+  if (!ES_CORDOVA) {
+    const pedido = PEDIDOS_FAKE.find(p => p.id == pedidoId);
+    callback(null, pedido || null);
+    return;
+  }
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.setDataSerializer("json");
   cordova.plugin.http.sendRequest(
@@ -151,31 +163,30 @@ function obtenerPedidoPorId(pedidoId, callback) {
     }
   );
 }
-
+// -------- Cerrar pedido en PrestaShop --------
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   if (!pedidosListos) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
   }
 
-  obtenerPedidoPorId(pedidoId, function(err, pedido) {
-    if (err || !pedido) {
-      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
-      alert("El error es: " + err + " y el pedido es: " + pedido);
-      return;
-    }
+  if (ES_CORDOVA) {
+    obtenerPedidoPorId(pedidoId, function(err, pedido) {
+      if (err || !pedido) {
+        alert("Error al obtener datos del pedido: " + JSON.stringify(err));
+        return;
+      }
 
-    // Validación de campos críticos
-    if (!pedido.module || pedido.module.trim() === "") { alert("Error: 'module' vacío."); return; }
-    if (!pedido.payment || pedido.payment.trim() === "") { alert("Error: 'payment' vacío."); return; }
-    if (!pedido.secure_key || pedido.secure_key.trim() === "") { alert("Error: 'secure_key' vacío."); return; }
-    if (!pedido.id_shop || !pedido.id_shop_group) { alert("Error: faltan id_shop/id_shop_group."); return; }
+      // Validación de campos críticos
+      if (!pedido.module || pedido.module.trim() === "") { alert("Error: 'module' vacío."); return; }
+      if (!pedido.payment || pedido.payment.trim() === "") { alert("Error: 'payment' vacío."); return; }
+      if (!pedido.secure_key || pedido.secure_key.trim() === "") { alert("Error: 'secure_key' vacío."); return; }
+      if (!pedido.id_shop || !pedido.id_shop_group) { alert("Error: faltan id_shop/id_shop_group."); return; }
 
-    const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
-    const gift = pedido.gift === true || pedido.gift === "1" ? "1" : "0";
+      const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
+      const gift = pedido.gift === true || pedido.gift === "1" ? "1" : "0";
 
-    // Nota: firmaDataURL disponible si se usó el popup de firma (puedes enviarla a tu backend aparte)
-    const xmlData = `
+      const xmlData = `
 <prestashop>
   <order>
     <id><![CDATA[${pedido.id}]]></id>
@@ -226,49 +237,44 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 </prestashop>
 `;
 
-    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-    cordova.plugin.http.setDataSerializer("utf8");
+      const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+      cordova.plugin.http.setDataSerializer("utf8");
 
-    cordova.plugin.http.sendRequest(
-      url,
-      {
-        method: "put",
-        data: xmlData,
-        headers: {
-          "Content-Type": "application/xml",
-          "Accept": "application/json"
+      cordova.plugin.http.sendRequest(
+        url,
+        {
+          method: "put",
+          data: xmlData,
+          headers: {
+            "Content-Type": "application/xml",
+            "Accept": "application/json"
+          }
+        },
+        function(response) {
+          alert("Pedido #" + pedidoId + " actualizado a estado Entregado");
+          cargarPedidos();
+        },
+        function(error) {
+          alert("Error al cerrar pedido:\nPor favor intentelo de nuevo");
         }
-      },
-      function(response) {
-        alert("Pedido #" + pedidoId + " actualizado a estado Entregado");
-        cargarPedidos();
-      },
-      function(error) {
-        alert("Error al cerrar pedido:\n" + "Por favor intentelo de nuevo");
-      }
-    );
-  });
+      );
+    });
+  } else {
+    // Simulación en navegador
+    alert("Modo navegador: pedido #" + pedidoId + " marcado como cerrado (simulado).");
+    cargarPedidos();
+  }
 }
 
-/*
 // -------- Manejo de firma del cliente --------
-
-// Variables de estado
-let firmaCanvas, ctx, dibujando = false;
-let firmaDataURL = null;
-let pedidoEnFirma = null;
-
-// Inicializa el canvas de firma
 function inicializarFirma() {
   firmaCanvas = document.getElementById("canvas-firma");
   ctx = firmaCanvas.getContext("2d");
 
-  // limpiar estado
   ctx.clearRect(0, 0, firmaCanvas.width, firmaCanvas.height);
   firmaDataURL = null;
   dibujando = false;
 
-  // Elimina listeners previos clonando el canvas
   const nuevoCanvas = firmaCanvas.cloneNode(true);
   firmaCanvas.parentNode.replaceChild(nuevoCanvas, firmaCanvas);
   firmaCanvas = nuevoCanvas;
@@ -287,7 +293,6 @@ function inicializarFirma() {
   firmaCanvas.addEventListener("touchmove", dibujar, { passive: false });
 }
 
-// Funciones de dibujo
 function empezarDibujo(e) {
   e.preventDefault();
   dibujando = true;
@@ -307,7 +312,6 @@ function dibujar(e) {
   ctx.stroke();
 }
 
-// Coordenadas relativas al canvas
 function getX(e) {
   const rect = firmaCanvas.getBoundingClientRect();
   return e.touches ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
@@ -330,25 +334,23 @@ $("#btn-guardar-firma").on("click", function() {
   firmaDataURL = firmaCanvas.toDataURL("image/png");
   $("#popup-firma").popup("close");
   if (pedidoEnFirma) {
-    cerrarPedidoPrestashop(pedidoEnFirma, 5); // usa tu función de cierre
+    cerrarPedidoPrestashop(pedidoEnFirma, 5);
     pedidoEnFirma = null;
   }
-}); 
+});
 
-// Abre popup de firma y guarda el id del pedido
+// Abre popup de firma
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
-    alert('Firma inicializada' + pedidoId + nuevoEstado);
   if (!pedidosListos) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
   }
-  
+
   if (firmaObligatoria) {
     pedidoEnFirma = pedidoId;
     $("#popup-firma").popup("open");
-
-    //inicializarFirma();
+    inicializarFirma();
   } else {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
   }
-}*/
+}
