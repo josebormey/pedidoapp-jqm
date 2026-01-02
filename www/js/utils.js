@@ -8,34 +8,53 @@ function formatoMoneda(valor) {
 
 // -------- Funciones auxiliares --------
 function obtenerCliente(idCliente, callback) {
-  if (!ES_CORDOVA) { callback(null, { firstname:"Fake", lastname:"Cliente"}); return; }
   const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
-    catch(e) { callback(e, {}); }
-  }, function(err) { callback(err, {}); });
+
+  if (ES_CORDOVA) {
+    cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
+      try { const data = JSON.parse(resp.data); callback(null, data.customer || {}); }
+      catch(e) { callback(e, {}); }
+    }, function(err) { callback(err, {}); });
+  } else {
+    fetch(url)
+      .then(resp => resp.json())
+      .then(data => callback(null, data.customer || {}))
+      .catch(err => callback(err, {}));
+  }
 }
 
 function obtenerDireccion(idDireccion, callback) {
-  if (!ES_CORDOVA) { callback(null, { address1:"Fake", city:"Habana"}); return; }
   const url = `${API_URL}/addresses/${idDireccion}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
-    try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
-    catch(e) { callback(e, {}); }
-  }, function(err) { callback(err, {}); });
+
+  if (ES_CORDOVA) {
+    cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
+      try { const data = JSON.parse(resp.data); callback(null, data.address || {}); }
+      catch(e) { callback(e, {}); }
+    }, function(err) { callback(err, {}); });
+  } else {
+    fetch(url)
+      .then(resp => resp.json())
+      .then(data => callback(null, data.address || {}))
+      .catch(err => callback(err, {}));
+  }
 }
 
 function obtenerPedidosCompletos(idCarrier, callback) {
-  if (!ES_CORDOVA) { callback(null, PEDIDOS_FAKE); return; }
   const url = `${API_URL}/orders?ws_key=${WS_KEY}&output_format=JSON&filter[id_carrier]=${idCarrier}&display=full`;
-  cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
-    try { const data = JSON.parse(response.data); callback(null, data.orders || []); }
-    catch (e) { callback(e, []); }
-  }, function(error) { callback(error, []); });
-}
 
+  if (ES_CORDOVA) {
+    cordova.plugin.http.sendRequest(url, { method: "get", headers: { "Accept": "application/json" } }, function(response) {
+      try { const data = JSON.parse(response.data); callback(null, data.orders || []); }
+      catch (e) { callback(e, []); }
+    }, function(error) { callback(error, []); });
+  } else {
+    fetch(url, { headers: { "Accept": "application/json" } })
+      .then(resp => resp.json())
+      .then(data => callback(null, data.orders || []))
+      .catch(err => callback(err, []));
+  }
+}
 function procesarPedidos(idCarrier, callback) {
-  if (!ES_CORDOVA) { callback(null, PEDIDOS_FAKE); return; }
   obtenerPedidosCompletos(idCarrier, function(err, pedidos) {
     if (err) { callback(err, []); return; }
     const filtrados = pedidos.filter(p => ESTADOS_PEDIDO[parseInt(p.current_state)] === "En espera de validacion por contra reembolso");
@@ -76,10 +95,9 @@ function notificarNuevosPedidos(pedidos) {
   });
 }
 
-//let pedidosListosFlag = false;
-
 // -------- Cargar pedidos --------
 function cargarPedidos() {
+  console.log("cargarPedidos ejecutado");
   $("#lista-pedidos").html("<p>Cargando...</p>");
   procesarPedidos(CARRIER_ID, function(err, pedidos) {
     $("#lista-pedidos").empty();
@@ -128,41 +146,32 @@ function mostrarProductos(pedidoId) {
   $("#lista-productos").listview("refresh");
   $("#popup-productos").popup("open");
 }
-
 // -------- Obtener pedido por ID --------
 function obtenerPedidoPorId(pedidoId, callback) {
-  if (!ES_CORDOVA) {
-    const pedido = PEDIDOS_FAKE.find(p => p.id == pedidoId);
-    callback(null, pedido || null);
-    return;
-  }
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
-  cordova.plugin.http.setDataSerializer("json");
-  cordova.plugin.http.sendRequest(
-    url,
-    { method: "get", headers: { "Accept": "application/json" } },
-    function(resp) {
-      try {
-        let data = resp.data;
-        if (typeof data === "string") data = JSON.parse(data);
-        if (data && data.order) {
-          console.log("Pedido obtenido correctamente:", data.order);
-          callback(null, data.order);
-        } else {
-          console.log("Respuesta inesperada:", data);
-          callback(new Error("No se encontró 'order' en la respuesta"), null);
-        }
-      } catch (e) {
-        console.error("Error parseando respuesta:", e, resp.data);
-        callback(e, null);
-      }
-    },
-    function(err) {
-      console.error("Error HTTP al obtener pedido:", err);
-      callback(err || new Error("Error HTTP desconocido"), null);
-    }
-  );
+
+  if (ES_CORDOVA) {
+    cordova.plugin.http.setDataSerializer("json");
+    cordova.plugin.http.sendRequest(
+      url,
+      { method: "get", headers: { "Accept": "application/json" } },
+      function(resp) {
+        try {
+          let data = resp.data;
+          if (typeof data === "string") data = JSON.parse(data);
+          callback(null, data.order || null);
+        } catch (e) { callback(e, null); }
+      },
+      function(err) { callback(err, null); }
+    );
+  } else {
+    fetch(url, { headers: { "Accept": "application/json" } })
+      .then(resp => resp.json())
+      .then(data => callback(null, data.order || null))
+      .catch(err => callback(err, null));
+  }
 }
+
 // -------- Cerrar pedido en PrestaShop --------
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   if (!pedidosListos) {
@@ -170,85 +179,35 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
     return;
   }
 
-  if (ES_CORDOVA) {
-    obtenerPedidoPorId(pedidoId, function(err, pedido) {
-      if (err || !pedido) {
-        alert("Error al obtener datos del pedido: " + JSON.stringify(err));
-        return;
-      }
+  obtenerPedidoPorId(pedidoId, function(err, pedido) {
+    if (err || !pedido) {
+      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
+      return;
+    }
 
-      // Validación de campos críticos
-      if (!pedido.module || pedido.module.trim() === "") { alert("Error: 'module' vacío."); return; }
-      if (!pedido.payment || pedido.payment.trim() === "") { alert("Error: 'payment' vacío."); return; }
-      if (!pedido.secure_key || pedido.secure_key.trim() === "") { alert("Error: 'secure_key' vacío."); return; }
-      if (!pedido.id_shop || !pedido.id_shop_group) { alert("Error: faltan id_shop/id_shop_group."); return; }
+    const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
+    const gift = pedido.gift === true || pedido.gift === "1" ? "1" : "0";
 
-      const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
-      const gift = pedido.gift === true || pedido.gift === "1" ? "1" : "0";
+    const xmlData = `<prestashop><order>
+      <id><![CDATA[${pedido.id}]]></id>
+      <current_state><![CDATA[${nuevoEstado}]]></current_state>
+      <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
+      <payment><![CDATA[${pedido.payment}]]></payment>
+      <recyclable><![CDATA[${reciclable}]]></recyclable>
+      <gift><![CDATA[${gift}]]></gift>
+      <reference><![CDATA[${pedido.reference}]]></reference>
+    </order></prestashop>`;
 
-      const xmlData = `
-<prestashop>
-  <order>
-    <id><![CDATA[${pedido.id}]]></id>
-    <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
-    <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
-    <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
-    <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
-    <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
-    <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
-    <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
-    <current_state><![CDATA[${nuevoEstado}]]></current_state>
-    <module><![CDATA[${pedido.module}]]></module>
-    <invoice_number><![CDATA[${pedido.invoice_number}]]></invoice_number>
-    <invoice_date><![CDATA[${pedido.invoice_date}]]></invoice_date>
-    <delivery_number><![CDATA[${pedido.delivery_number}]]></delivery_number>
-    <delivery_date><![CDATA[${pedido.delivery_date}]]></delivery_date>
-    <valid><![CDATA[${pedido.valid}]]></valid>
-    <date_add><![CDATA[${pedido.date_add}]]></date_add>
-    <date_upd><![CDATA[${pedido.date_upd}]]></date_upd>
-    <id_shop_group><![CDATA[${pedido.id_shop_group}]]></id_shop_group>
-    <id_shop><![CDATA[${pedido.id_shop}]]></id_shop>
-    <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
-    <payment><![CDATA[${pedido.payment}]]></payment>
-    <recyclable><![CDATA[${reciclable}]]></recyclable>
-    <gift><![CDATA[${gift}]]></gift>
-    <gift_message><![CDATA[${pedido.gift_message}]]></gift_message>
-    <total_discounts><![CDATA[${pedido.total_discounts}]]></total_discounts>
-    <total_discounts_tax_incl><![CDATA[${pedido.total_discounts_tax_incl}]]></total_discounts_tax_incl>
-    <total_discounts_tax_excl><![CDATA[${pedido.total_discounts_tax_excl}]]></total_discounts_tax_excl>
-    <total_paid><![CDATA[${pedido.total_paid}]]></total_paid>
-    <total_paid_tax_incl><![CDATA[${pedido.total_paid_tax_incl}]]></total_paid_tax_incl>
-    <total_paid_tax_excl><![CDATA[${pedido.total_paid_tax_excl}]]></total_paid_tax_excl>
-    <total_paid_real><![CDATA[${pedido.total_paid_real}]]></total_paid_real>
-    <total_products><![CDATA[${pedido.total_products}]]></total_products>
-    <total_products_wt><![CDATA[${pedido.total_products_wt}]]></total_products_wt>
-    <total_shipping><![CDATA[${pedido.total_shipping}]]></total_shipping>
-    <total_shipping_tax_incl><![CDATA[${pedido.total_shipping_tax_incl}]]></total_shipping_tax_incl>
-    <total_shipping_tax_excl><![CDATA[${pedido.total_shipping_tax_excl}]]></total_shipping_tax_excl>
-    <carrier_tax_rate><![CDATA[${pedido.carrier_tax_rate}]]></carrier_tax_rate>
-    <total_wrapping><![CDATA[${pedido.total_wrapping}]]></total_wrapping>
-    <total_wrapping_tax_incl><![CDATA[${pedido.total_wrapping_tax_incl}]]></total_wrapping_tax_incl>
-    <total_wrapping_tax_excl><![CDATA[${pedido.total_wrapping_tax_excl}]]></total_wrapping_tax_excl>
-    <round_mode><![CDATA[${pedido.round_mode}]]></round_mode>
-    <round_type><![CDATA[${pedido.round_type}]]></round_type>
-    <conversion_rate><![CDATA[${pedido.conversion_rate}]]></conversion_rate>
-    <reference><![CDATA[${pedido.reference}]]></reference>
-  </order>
-</prestashop>
-`;
+    const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
 
-      const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
+    if (ES_CORDOVA) {
       cordova.plugin.http.setDataSerializer("utf8");
-
       cordova.plugin.http.sendRequest(
         url,
         {
           method: "put",
           data: xmlData,
-          headers: {
-            "Content-Type": "application/xml",
-            "Accept": "application/json"
-          }
+          headers: { "Content-Type": "application/xml", "Accept": "application/json" }
         },
         function(response) {
           alert("Pedido #" + pedidoId + " actualizado a estado Entregado");
@@ -258,12 +217,20 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
           alert("Error al cerrar pedido:\nPor favor intentelo de nuevo");
         }
       );
-    });
-  } else {
-    // Simulación en navegador
-    alert("Modo navegador: pedido #" + pedidoId + " marcado como cerrado (simulado).");
-    cargarPedidos();
-  }
+    } else {
+      fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/xml", "Accept": "application/json" },
+        body: xmlData
+      })
+      .then(resp => resp.json())
+      .then(() => {
+        alert("Pedido #" + pedidoId + " actualizado a estado Entregado (web)");
+        cargarPedidos();
+      })
+      .catch(() => alert("Error al cerrar pedido en web"));
+    }
+  });
 }
 
 // -------- Manejo de firma del cliente --------
