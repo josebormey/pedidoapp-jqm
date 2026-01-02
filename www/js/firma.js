@@ -89,12 +89,13 @@ function iniciarCierreConFirma(pedidoId, nuevoEstado) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
   }
+  /*
   if (firmaObligatoria) {
     pedidoEnFirma = pedidoId;
     $("#popup-firma").popup("open");
-    
+
     //inicializarFirma();
   } else {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
-  }
+  }*/
 }
