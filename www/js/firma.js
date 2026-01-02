@@ -1,5 +1,5 @@
 // -------- Manejo de firma del cliente --------
-
+/*
 // Variables de estado
 let firmaCanvas, ctx, dibujando = false;
 let firmaDataURL = null;
@@ -80,12 +80,12 @@ $("#btn-guardar-firma").on("click", function() {
     cerrarPedidoPrestashop(pedidoEnFirma, 5); // usa tu función de cierre
     pedidoEnFirma = null;
   }
-});
+}); */
 
 // Abre popup de firma y guarda el id del pedido
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
-    alert('Forma inicializada');
-  if (!pedidosListos) {
+    alert('Firma inicializada');
+  /*if (!pedidosListos) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
   }
@@ -95,5 +95,5 @@ function iniciarCierreConFirma(pedidoId, nuevoEstado) {
     inicializarFirma();
   } else {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
-  }
+  }*/
 }
