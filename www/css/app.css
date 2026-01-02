@@ -3,7 +3,7 @@
          color: orange; 
          font-weight: bold; 
     }
-    
+
     .estado-enviado { 
         color: blue; 
         font-weight: bold; 
@@ -30,4 +30,8 @@
     #canvas-firma { 
         border:1px solid #ccc; 
         background:#fff; 
+    }
+
+    .btn-refresh{
+        color: orange;
     }
