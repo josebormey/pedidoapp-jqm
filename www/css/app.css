@@ -1,0 +1,33 @@
+
+    .estado-preparacion {
+         color: orange; 
+         font-weight: bold; 
+    }
+    
+    .estado-enviado { 
+        color: blue; 
+        font-weight: bold; 
+    }
+
+    .estado-entregado { 
+        color: green; 
+        font-weight: bold; 
+    }
+
+    .estado-cancelado { 
+        color: red; 
+        font-weight: bold; 
+    }
+
+    .pedido-card { 
+        padding:10px; 
+        border:1px solid #ccc; 
+        border-radius:8px; 
+        margin-bottom:10px; 
+        background:#f9f9f9; 
+    }
+
+    #canvas-firma { 
+        border:1px solid #ccc; 
+        background:#fff; 
+    }
