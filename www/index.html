@@ -82,6 +82,14 @@ function claseEstado(estado) {
   }
 }
 
+function formatoMoneda(valor) {
+  return parseFloat(valor).toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }) + " MN"; // o CUP si prefieres
+}
+
+
 let pedidosCache = [];
 let notificacionesDisponibles = false;
 
@@ -173,7 +181,7 @@ function cargarPedidos() {
              <p><strong>Cliente:</strong> ${p.cliente}</p>
              <p><strong>Teléfono:</strong> ${p.telefono}</p>
              <p><strong>Dirección:</strong> ${p.direccion}</p>
-             <p><strong>Total:</strong> ${p.total}</p>
+             <p><strong>Total:</strong> ${formatoMoneda(p.total)}</p>
              <a href="#" onclick="mostrarProductos(${p.id})"
                 class="ui-btn ui-mini ui-btn-b">Ver productos</a>
              <a href="#" data-id="${p.id}" onclick="cerrarPedidoPrestashop(this.dataset.id,5)"
