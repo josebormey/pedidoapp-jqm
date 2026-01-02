@@ -65,7 +65,7 @@ const API_URL = "https://www.ferroclimaexpress.com/api";
 const WS_KEY = "B4KYF7LZ714FYZ5KADYM6TZCCKCVS4Q7";
 const CARRIER_ID = 6;
 
-// Diccionario de monedas según tu configuración en PrestaShop
+// Monedas dinámicas
 const MONEDAS = { 1: "CUP", 2: "USD" };
 
 const ESTADOS_PEDIDO = {
@@ -124,54 +124,6 @@ function mostrarTotal(p) {
   }
   return `${formatoMoneda(p.total_paid)} ${moneda}`;
 }
-function cargarPedidos() {
-  $("#lista-pedidos").html("<p>Cargando...</p>");
-  procesarPedidos(CARRIER_ID, function(err, pedidos) {
-    $("#lista-pedidos").empty();
-    if (err) { $("#lista-pedidos").html("<p>Error al cargar pedidos</p>"); return; }
-    $("#contador-pedidos").text(pedidos.length);
-    if (pedidos.length === 0) {
-      $("#lista-pedidos").html("<p>No existen pedidos en 'Espera de validacion por contra reembolso'</p>");
-    } else {
-      notificarNuevosPedidos(pedidos);
-      pedidosCache = pedidos;
-      pedidosListos = true;
-
-      pedidos.forEach(p => {
-        $("#lista-pedidos").append(
-          `<div class="pedido-card">
-             <h2 class="${claseEstado(p.estado)}">Pedido #${p.id} - ${p.estado}</h2>
-             <p><strong>Cliente:</strong> ${p.cliente}</p>
-             <p><strong>Teléfono:</strong> ${p.telefono}</p>
-             <p><strong>Dirección:</strong> ${p.direccion}</p>
-             <p><strong>Total:</strong> ${mostrarTotal(p)}</p>
-             <a href="#" onclick="mostrarProductos(${p.id})"
-                class="ui-btn ui-mini ui-btn-b">Ver productos</a>
-             <a href="#" data-id="${p.id}" onclick="iniciarCierreConFirma(${p.id},5)"
-                class="ui-btn ui-mini ui-btn-b">Cerrar pedido</a>
-           </div>`
-        );
-      });
-    }
-  });
-}
-
-function mostrarProductos(pedidoId) {
-  const pedido = pedidosCache.find(p => p.id == pedidoId);
-  $("#lista-productos").empty();
-  if (pedido && pedido.productos.length > 0) {
-    pedido.productos.forEach(row => {
-      $("#lista-productos").append(
-        `<li>${row.product_name} x${row.product_quantity} - ${formatoMoneda(row.unit_price_tax_incl)} CUP</li>`
-      );
-    });
-  } else {
-    $("#lista-productos").append("<li>Este pedido no tiene productos asociados</li>");
-  }
-  $("#lista-productos").listview("refresh");
-  $("#popup-productos").popup("open");
-}
-
 function obtenerPedidoPorId(pedidoId, callback) {
   const url = `${API_URL}/orders/${pedidoId}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.setDataSerializer("json");
@@ -183,40 +135,53 @@ function obtenerPedidoPorId(pedidoId, callback) {
         let data = resp.data;
         if (typeof data === "string") data = JSON.parse(data);
         if (data && data.order) {
+          console.log("Pedido obtenido correctamente:", data.order);
           callback(null, data.order);
         } else {
+          console.log("Respuesta inesperada:", data);
           callback(new Error("No se encontró 'order' en la respuesta"), null);
         }
       } catch (e) {
+        console.error("Error parseando respuesta:", e, resp.data);
         callback(e, null);
       }
     },
-    function(err) { callback(err || new Error("Error HTTP desconocido"), null); }
+    function(err) {
+      console.error("Error HTTP al obtener pedido:", err);
+      callback(err || new Error("Error HTTP desconocido"), null);
+    }
   );
 }
 
-// -------- Firma digital --------
+// -------- Firma digital corregida --------
 function inicializarFirma() {
   firmaCanvas = document.getElementById("canvas-firma");
   ctx = firmaCanvas.getContext("2d");
   ctx.clearRect(0, 0, firmaCanvas.width, firmaCanvas.height);
   firmaDataURL = null;
+  dibujando = false;
 
+  // ratón
   firmaCanvas.onmousedown = e => { dibujando = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
   firmaCanvas.onmouseup   = () => { dibujando = false; };
+  firmaCanvas.onmouseleave= () => { dibujando = false; };
   firmaCanvas.onmousemove = e => { if (dibujando) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); } };
 
+  // táctil
   firmaCanvas.addEventListener("touchstart", e => {
-    e.preventDefault(); dibujando = true;
+    e.preventDefault();
+    dibujando = true;
     const t = e.touches[0], rect = firmaCanvas.getBoundingClientRect();
     ctx.beginPath(); ctx.moveTo(t.clientX - rect.left, t.clientY - rect.top);
-  });
-  firmaCanvas.addEventListener("touchend", e => { e.preventDefault(); dibujando = false; });
+  }, { passive: false });
+
+  firmaCanvas.addEventListener("touchend", e => { e.preventDefault(); dibujando = false; }, { passive: false });
   firmaCanvas.addEventListener("touchmove", e => {
-    e.preventDefault(); if (!dibujando) return;
+    e.preventDefault();
+    if (!dibujando) return;
     const t = e.touches[0], rect = firmaCanvas.getBoundingClientRect();
     ctx.lineTo(t.clientX - rect.left, t.clientY - rect.top); ctx.stroke();
-  });
+  }, { passive: false });
 }
 
 $("#btn-limpiar-firma").on("click", function() {
@@ -233,16 +198,38 @@ $("#btn-guardar-firma").on("click", function() {
   }
 });
 
+// Abre popup de firma y guarda el id del pedido
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
-  if (!pedidosListos) { alert("Los pedidos aún se están cargando."); return; }
-  pedidoEnFirma = pedidoId;
-  $("#popup-firma").popup("open");
-  inicializarFirma();
+  if (!pedidosListos) {
+    alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
+    return;
+  }
+  if (firmaObligatoria) {
+    pedidoEnFirma = pedidoId;
+    $("#popup-firma").popup("open");
+    inicializarFirma();
+  } else {
+    cerrarPedidoPrestashop(pedidoId, nuevoEstado);
+  }
 }
 
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
+  if (!pedidosListos) {
+    alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
+    return;
+  }
+
   obtenerPedidoPorId(pedidoId, function(err, pedido) {
-    if (err || !pedido) { alert("Error al obtener datos del pedido"); return; }
+    if (err || !pedido) {
+      alert("Error al obtener datos del pedido: " + JSON.stringify(err));
+      return;
+    }
+
+    // Validación de campos críticos
+    if (!pedido.module || pedido.module.trim() === "") { alert("Error: 'module' vacío."); return; }
+    if (!pedido.payment || pedido.payment.trim() === "") { alert("Error: 'payment' vacío."); return; }
+    if (!pedido.secure_key || pedido.secure_key.trim() === "") { alert("Error: 'secure_key' vacío."); return; }
+    if (!pedido.id_shop || !pedido.id_shop_group) { alert("Error: faltan id_shop/id_shop_group."); return; }
 
     const reciclable = pedido.recyclable === true || pedido.recyclable === "1" ? "1" : "0";
     const gift = pedido.gift === true || pedido.gift === "1" ? "1" : "0";
@@ -251,14 +238,31 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 <prestashop>
   <order>
     <id><![CDATA[${pedido.id}]]></id>
+    <id_address_delivery><![CDATA[${pedido.id_address_delivery}]]></id_address_delivery>
+    <id_address_invoice><![CDATA[${pedido.id_address_invoice}]]></id_address_invoice>
+    <id_cart><![CDATA[${pedido.id_cart}]]></id_cart>
+    <id_currency><![CDATA[${pedido.id_currency}]]></id_currency>
+    <id_lang><![CDATA[${pedido.id_lang}]]></id_lang>
+    <id_customer><![CDATA[${pedido.id_customer}]]></id_customer>
+    <id_carrier><![CDATA[${pedido.id_carrier}]]></id_carrier>
     <current_state><![CDATA[${nuevoEstado}]]></current_state>
     <module><![CDATA[${pedido.module}]]></module>
-    <payment><![CDATA[${pedido.payment}]]></payment>
-    <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
+    <invoice_number><![CDATA[${pedido.invoice_number}]]></invoice_number>
+    <invoice_date><![CDATA[${pedido.invoice_date}]]></invoice_date>
+    <delivery_number><![CDATA[${pedido.delivery_number}]]></delivery_number>
+    <delivery_date><![CDATA[${pedido.delivery_date}]]></delivery_date>
+    <valid><![CDATA[${pedido.valid}]]></valid>
+    <date_add><![CDATA[${pedido.date_add}]]></date_add>
+    <date_upd><![CDATA[${pedido.date_upd}]]></date_upd>
     <id_shop_group><![CDATA[${pedido.id_shop_group}]]></id_shop_group>
     <id_shop><![CDATA[${pedido.id_shop}]]></id_shop>
+    <secure_key><![CDATA[${pedido.secure_key}]]></secure_key>
+    <payment><![CDATA[${pedido.payment}]]></payment>
     <recyclable><![CDATA[${reciclable}]]></recyclable>
     <gift><![CDATA[${gift}]]></gift>
+    <gift_message><![CDATA[${pedido.gift_message}]]></gift_message>
+    <total_paid><![CDATA[${pedido.total_paid}]]></total_paid>
+    <conversion_rate><![CDATA[${pedido.conversion_rate}]]></conversion_rate>
     <reference><![CDATA[${pedido.reference}]]></reference>
   </order>
 </prestashop>
@@ -269,13 +273,22 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
 
     cordova.plugin.http.sendRequest(
       url,
-      { method: "put", data: xmlData, headers: { "Content-Type": "application/xml", "Accept": "application/json" } },
+      {
+        method: "put",
+        data: xmlData,
+        headers: {
+          "Content-Type": "application/xml",
+          "Accept": "application/json"
+        }
+      },
       function(response) {
         alert("Pedido #" + pedidoId + " actualizado a estado Entregado");
         cargarPedidos();
         // Aquí podrías enviar firmaDataURL a tu backend como comprobante
       },
-      function(error) { alert("Error al cerrar pedido. Intente de nuevo."); }
+      function(error) {
+        alert("Error al cerrar pedido:\n" + "Por favor intentelo de nuevo");
+      }
     );
   });
 }
@@ -286,9 +299,16 @@ document.addEventListener("deviceready", function() {
     if (cordova.plugins && cordova.plugins.notification && cordova.plugins.notification.local) {
       cordova.plugins.notification.local.requestPermission(function(granted) {
         notificacionesDisponibles = !!granted;
+        console.log("Permiso notificaciones:", granted);
       });
+    } else {
+      notificacionesDisponibles = false;
+      console.log("Plugin de notificaciones no disponible.");
     }
-  } catch(e) { notificacionesDisponibles = false; }
+  } catch(e) {
+    notificacionesDisponibles = false;
+    console.log("Error inicializando notificaciones:", e);
+  }
 
   $(document).ready(function() {
     cargarPedidos();
@@ -296,10 +316,13 @@ document.addEventListener("deviceready", function() {
   });
 
   $(document).on("pageshow", "#pedidos", function() { cargarPedidos(); });
+
+  // Chequeo automático cada 1 minuto
   setInterval(cargarPedidos, 60 * 1000);
 }, false);
 
 </script>
 </body>
 </html>
+
 
