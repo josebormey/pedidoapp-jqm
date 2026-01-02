@@ -250,6 +250,7 @@ function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   });
 }
 
+/*
 // -------- Manejo de firma del cliente --------
 
 // Variables de estado
@@ -350,4 +351,4 @@ function iniciarCierreConFirma(pedidoId, nuevoEstado) {
   } else {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
   }
-}
+}*/
