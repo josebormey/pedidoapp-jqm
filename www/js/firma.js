@@ -84,12 +84,12 @@ $("#btn-guardar-firma").on("click", function() {
 
 // Abre popup de firma y guarda el id del pedido
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
-    alert('Firma inicializada');
+    alert('Firma inicializada' + pedidoId + nuevoEstado);
   /*if (!pedidosListos) {
     alert("Los pedidos aún se están cargando. Intenta de nuevo en unos segundos.");
     return;
-  }*/
-  /*
+  }
+  
   if (firmaObligatoria) {
     pedidoEnFirma = pedidoId;
     $("#popup-firma").popup("open");
