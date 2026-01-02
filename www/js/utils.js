@@ -1,5 +1,5 @@
 
-// Formato moneda
+// Funcion de formato moneda
 function formatoMoneda(valor) {
   return parseFloat(valor).toLocaleString("es-ES", {
     minimumFractionDigits: 2,
@@ -7,7 +7,7 @@ function formatoMoneda(valor) {
   }) + " MN";
 }
 
-// Auxiliares para cliente y dirección
+// Funciones auxiliares para cliente y dirección
 function obtenerCliente(idCliente, callback) {
   const url = `${API_URL}/customers/${idCliente}?ws_key=${WS_KEY}&output_format=JSON`;
   cordova.plugin.http.sendRequest(url, { method: "get" }, function(resp) {
