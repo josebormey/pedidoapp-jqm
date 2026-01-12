@@ -1,21 +1,12 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.ferroclimaexpress.jqm" version="1.0.0"
-        xmlns="http://www.w3.org/ns/widgets"
-        xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>PedidoAppJQM</name>
-    <description>App ECGA con jQuery Mobile</description>
-    <author email="jose@example.com">Jose</author>
-    <content src="index.html" />
-
-    <!-- Plugins -->
-    <plugin name="cordova-plugin-whitelist" spec="1" />
-
-    <!-- Permisos de navegación y acceso -->
-    <access origin="*" />
-    <allow-navigation href="*" />
-    <allow-intent href="*" />
-
-    <platform name="android">
-        <allow-intent href="market:*" />
-    </platform>
+<widget id="com.byzcode.catalogo" version="1.0.0" xmlns="http://www.w3.org/ns/widgets">
+  <name>Catalogo</name>
+  <description>Catálogo multimedia offline</description>
+  <author email="tuemail@ejemplo.com">Jose</author>
+  <content src="index.html" />
+  <preference name="Fullscreen" value="true" />
+  <preference name="Orientation" value="portrait" />
+  <platform name="android" />
 </widget>
+
+

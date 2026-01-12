@@ -1,0 +1,26 @@
+/* Estilos básicos para catálogo multimedia */
+.price { font-weight: bold; color: #2a7; }
+.cats { color: #666; }
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.gallery-item img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+}
+
+.video-item, .audio-item {
+  margin-bottom: 12px;
+}
+
+.ui-li-thumb {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+}

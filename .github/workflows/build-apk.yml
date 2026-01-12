@@ -1,9 +1,8 @@
-name: Build JQM APK
+name: Build Cordova APK
 
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -11,38 +10,24 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: "18"
+        node-version: '18'
 
     - name: Install Cordova
       run: npm install -g cordova
 
-    - name: Create Cordova project
-      run: |
-        cordova create pedidoapp-jqm com.ferroclimaexpress.jqm PedidoAppJQM
-        cp -r www pedidoapp-jqm/www
-        cp config.xml pedidoapp-jqm/config.xml
-        cd pedidoapp-jqm
-        cordova platform add android
-        cordova plugin add cordova-plugin-whitelist
-        cordova plugin add cordova-plugin-advanced-http
+    - name: Add Android platform
+      run: cordova platform add android
 
     - name: Build APK
-      run: |
-        cd pedidoapp-jqm
-        cordova build android
-
-    - name: Debug APK path
-      run: |
-        echo "Listing all APK files in workspace..."
-        find $GITHUB_WORKSPACE -name "*.apk" || true
+      run: cordova build android --release
 
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: PedidoAppJQM-APK
-        path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        name: catalogo-apk
+        path: platforms/android/app/build/outputs/apk/release/*.apk
