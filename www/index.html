@@ -36,6 +36,14 @@
 <div data-role="page" id="pedidos">
   <div data-role="header">
     <h1>Pedidos en curso (<span id="contador-pedidos">0</span>)</h1>
+	<a href="#menu-panel" class="ui-btn ui-btn-right ui-icon-gear ui-btn-icon-notext">Opciones</a>
+  </div>
+  
+  <!-- Panel lateral --> 
+  <div data-role="panel" id="menu-panel" data-display="overlay" data-position="right"> 
+  <h3>Opciones</h3> <ul data-role="listview"> 
+    <li><a href="#" id="menu-ver-firmas">Ver firmas guardadas</a></li> 
+	<li><a href="#" id="menu-ver-firma-id">Ver firma por ID</a></li> </ul> 
   </div>
 
   <div role="main" class="ui-content">
@@ -320,6 +328,7 @@ $("#btn-guardar-firma").on("click", function() {
 	  return; 
 	  }
   firmaDataURL = firmaCanvas.toDataURL("image/png");
+  guardarFirmaLocal(pedidoEnFirma, firmaDataURL); // <-- Guardar en sandbox
   $("#popup-firma").popup("close");
   if (pedidoEnFirma) {
     // tras guardar firma, cerramos el pedido
@@ -327,6 +336,22 @@ $("#btn-guardar-firma").on("click", function() {
     pedidoEnFirma = null;
   }
 });
+
+// Opción: Ver todas las firmas guardadas
+$("#menu-ver-firmas").on("click", function() {
+  $("#menu-panel").panel("close");
+  listarFirmasGuardadas(); // usa la función que ya definimos
+});
+
+// Opción: Ver firma por ID
+$("#menu-ver-firma-id").on("click", function() {
+  $("#menu-panel").panel("close");
+  var pedidoId = prompt("Ingrese el ID del pedido:");
+  if (pedidoId) {
+    mostrarFirma(pedidoId); // usa la función que ya definimos
+  }
+});
+
 
 // Abre popup de firma y guarda el id del pedido
 function iniciarCierreConFirma(pedidoId, nuevoEstado) {
@@ -342,6 +367,91 @@ function iniciarCierreConFirma(pedidoId, nuevoEstado) {
     cerrarPedidoPrestashop(pedidoId, nuevoEstado);
   }
 }
+
+// --- Guardar firma en sandbox interno ---
+function guardarFirmaLocal(pedidoId, firmaDataURL) {
+  // Convertir base64 a Blob
+  function b64toBlob(b64Data, contentType) {
+    contentType = contentType || '';
+    var sliceSize = 512;
+    var byteCharacters = atob(b64Data.split(',')[1]);
+    var byteArrays = [];
+
+    for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      var slice = byteCharacters.slice(offset, offset + sliceSize);
+      var byteNumbers = new Array(slice.length);
+      for (var i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      var byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
+  }
+
+  var blob = b64toBlob(firmaDataURL, "image/png");
+  var fileName = "firma_pedido_" + pedidoId + ".png";
+
+  // Guardar en el sandbox interno de la app
+  window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
+    dir.getFile(fileName, { create: true }, function(file) {
+      file.createWriter(function(writer) {
+        writer.write(blob);
+        alert("Firma guardada en sandbox: " + cordova.file.dataDirectory + fileName);
+      }, function(err) {
+        alert("Error al escribir archivo: " + JSON.stringify(err));
+      });
+    }, function(err) {
+      alert("Error al crear archivo: " + JSON.stringify(err));
+    });
+  }, function(err) {
+    alert("Error accediendo al directorio: " + JSON.stringify(err));
+  });
+}
+
+// Lista todas las formas guardadas 
+function listarFirmasGuardadas() {
+  window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
+    var reader = dir.createReader();
+    reader.readEntries(function(entries) {
+      if (entries.length === 0) {
+        alert("No hay firmas guardadas en el dispositivo.");
+        return;
+      }
+      let lista = "Firmas guardadas:\n";
+      entries.forEach(function(entry) {
+        if (entry.isFile && entry.name.startsWith("firma_pedido_")) {
+          lista += "- " + entry.name + "\n";
+        }
+      });
+      alert(lista);
+    }, function(err) {
+      alert("Error leyendo directorio: " + JSON.stringify(err));
+    });
+  });
+}
+
+// Muestra una firma basadp en el ID del pedido
+function mostrarFirma(pedidoId) {
+  var fileName = "firma_pedido_" + pedidoId + ".png";
+  window.resolveLocalFileSystemURL(cordova.file.dataDirectory + fileName, function(fileEntry) {
+    fileEntry.file(function(file) {
+      var reader = new FileReader();
+      reader.onloadend = function() {
+        // reader.result contiene la imagen en base64
+        var img = document.createElement("img");
+        img.src = reader.result;
+        img.style.maxWidth = "100%";
+        img.style.border = "1px solid #ccc";
+        document.body.appendChild(img); // o en un div específico
+      };
+      reader.readAsDataURL(file);
+    });
+  }, function(err) {
+    alert("No se encontró la firma para el pedido " + pedidoId);
+  });
+}
+
 
 function cerrarPedidoPrestashop(pedidoId, nuevoEstado) {
   if (!pedidosListos) {
