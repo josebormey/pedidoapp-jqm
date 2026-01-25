@@ -263,29 +263,42 @@ function inicializarFirma() {
   // limpiar estado
   ctx.clearRect(0, 0, firmaCanvas.width, firmaCanvas.height);
   firmaDataURL = null;
-
+  
+  // Eventos de mouse
   firmaCanvas.addEventListener("mousedown", empezarDibujo);
   firmaCanvas.addEventListener("mouseup", terminarDibujo);
   firmaCanvas.addEventListener("mousemove", dibujar);
-
-  firmaCanvas.addEventListener("touchstart", empezarDibujo);
-  firmaCanvas.addEventListener("touchend", terminarDibujo);
-  firmaCanvas.addEventListener("touchmove", dibujar);
+  
+  // Eventos de touch (móvil)
+  firmaCanvas.addEventListener("touchstart", empezarDibujo, { passive: false }); 
+  firmaCanvas.addEventListener("touchend", terminarDibujo, { passive: false }); 
+  firmaCanvas.addEventListener("touchmove", dibujar, { passive: false });
 }
 
 function empezarDibujo(e) {
+  e.preventDefault();
   dibujando = true;
   ctx.beginPath();
   ctx.moveTo(getX(e), getY(e));
 }
-function terminarDibujo() { dibujando = false; }
+function terminarDibujo(e) { 
+   e.preventDefault();
+   dibujando = false; 
+}
 function dibujar(e) {
+  e.preventDefault();
   if (!dibujando) return;
   ctx.lineTo(getX(e), getY(e));
   ctx.stroke();
 }
-function getX(e) { return e.touches ? e.touches[0].clientX - firmaCanvas.offsetLeft : e.clientX - firmaCanvas.offsetLeft; }
-function getY(e) { return e.touches ? e.touches[0].clientY - firmaCanvas.offsetTop : e.clientY - firmaCanvas.offsetTop; }
+function getX(e) { 
+  const rect = firmaCanvas.getBoundingClientRect(); 
+  return (e.touches ? e.touches[0].clientX : e.clientX) - rect.left; 
+  }
+function getY(e) { 
+   const rect = firmaCanvas.getBoundingClientRect(); 
+   return (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  }
 
 function isCanvasBlank(canvas) { 
    const blank = document.createElement('canvas'); 
