@@ -45,6 +45,13 @@
     <li><a href="#" id="menu-ver-firmas">Ver firmas guardadas</a></li> 
 	<li><a href="#" id="menu-ver-firma-id">Ver firma por ID</a></li> </ul> 
   </div>
+  
+  <!-- Popup para mostrar firmas guardadas -->
+  <div data-role="popup" id="popup-firmas" class="ui-content" style="max-width:500px;">
+    <h3>Firmas guardadas</h3>
+    <div id="contenedor-firmas"></div>
+  </div>
+
 
   <div role="main" class="ui-content">
     <a href="#" id="btn-refresh"
@@ -414,22 +421,32 @@ function listarFirmasGuardadas() {
   window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
     var reader = dir.createReader();
     reader.readEntries(function(entries) {
+      $("#contenedor-firmas").empty();
       if (entries.length === 0) {
-        alert("No hay firmas guardadas en el dispositivo.");
-        return;
+        $("#contenedor-firmas").html("<p>No hay firmas guardadas en el dispositivo.</p>");
+      } else {
+        entries.forEach(function(entry) {
+          if (entry.isFile && entry.name.startsWith("firma_pedido_")) {
+            entry.file(function(file) {
+              var reader = new FileReader();
+              reader.onloadend = function() {
+                var img = $("<img>")
+                  .attr("src", reader.result)
+                  .css({ "max-width": "100%", "border": "1px solid #ccc", "margin-bottom": "10px" });
+                $("#contenedor-firmas").append(img);
+              };
+              reader.readAsDataURL(file);
+            });
+          }
+        });
       }
-      let lista = "Firmas guardadas:\n";
-      entries.forEach(function(entry) {
-        if (entry.isFile && entry.name.startsWith("firma_pedido_")) {
-          lista += "- " + entry.name + "\n";
-        }
-      });
-      alert(lista);
+      $("#popup-firmas").popup("open");
     }, function(err) {
       alert("Error leyendo directorio: " + JSON.stringify(err));
     });
   });
 }
+
 
 // Muestra una firma basadp en el ID del pedido
 function mostrarFirma(pedidoId) {
