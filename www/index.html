@@ -430,14 +430,22 @@ function listarFirmasGuardadas() {
           entry.file(function(file) {
             var reader = new FileReader();
             reader.onloadend = function() {
-              var img = $("<img>")
-                .attr("src", reader.result)
-                .css({
-                  "max-width": "100%",
-                  "border": "1px solid #ccc",
-                  "margin-bottom": "10px"
-                });
-              $("#contenedor-firmas").append(img);
+              // Extraer ID del pedido desde el nombre del archivo
+              var pedidoId = entry.name.replace("firma_pedido_", "").replace(".png", "");
+
+              // Crear bloque con ID + imagen
+              var bloque = $("<div>").css({ "margin-bottom": "15px" });
+              bloque.append($("<p>").html("<strong>Pedido #" + pedidoId + "</strong>"));
+              bloque.append(
+                $("<img>")
+                  .attr("src", reader.result)
+                  .css({
+                    "max-width": "100%",
+                    "border": "1px solid #ccc",
+                    "margin-top": "5px"
+                  })
+              );
+              $("#contenedor-firmas").append(bloque);
             };
             reader.readAsDataURL(file);
           });
@@ -455,6 +463,7 @@ function listarFirmasGuardadas() {
     });
   });
 }
+
 
 
 // Muestra una firma basadp en el ID del pedido
