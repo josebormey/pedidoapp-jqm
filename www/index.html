@@ -421,25 +421,34 @@ function listarFirmasGuardadas() {
   window.resolveLocalFileSystemURL(cordova.file.dataDirectory, function(dir) {
     var reader = dir.createReader();
     reader.readEntries(function(entries) {
-      $("#contenedor-firmas").empty();
-      if (entries.length === 0) {
+      $("#contenedor-firmas").empty(); // limpiar antes de mostrar
+
+      let hayFirmas = false;
+      entries.forEach(function(entry) {
+        if (entry.isFile && entry.name.startsWith("firma_pedido_")) {
+          hayFirmas = true;
+          entry.file(function(file) {
+            var reader = new FileReader();
+            reader.onloadend = function() {
+              var img = $("<img>")
+                .attr("src", reader.result)
+                .css({
+                  "max-width": "100%",
+                  "border": "1px solid #ccc",
+                  "margin-bottom": "10px"
+                });
+              $("#contenedor-firmas").append(img);
+            };
+            reader.readAsDataURL(file);
+          });
+        }
+      });
+
+      if (!hayFirmas) {
         $("#contenedor-firmas").html("<p>No hay firmas guardadas en el dispositivo.</p>");
-      } else {
-        entries.forEach(function(entry) {
-          if (entry.isFile && entry.name.startsWith("firma_pedido_")) {
-            entry.file(function(file) {
-              var reader = new FileReader();
-              reader.onloadend = function() {
-                var img = $("<img>")
-                  .attr("src", reader.result)
-                  .css({ "max-width": "100%", "border": "1px solid #ccc", "margin-bottom": "10px" });
-                $("#contenedor-firmas").append(img);
-              };
-              reader.readAsDataURL(file);
-            });
-          }
-        });
       }
+
+      // abrir el popup
       $("#popup-firmas").popup("open");
     }, function(err) {
       alert("Error leyendo directorio: " + JSON.stringify(err));
